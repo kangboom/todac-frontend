@@ -18,7 +18,6 @@ import {
   ActionIcon,
   Drawer,
   Box,
-  Divider,
   Collapse,
   Center
 } from '@mantine/core';
@@ -27,7 +26,6 @@ import {
   IconSend, 
   IconMenu2, 
   IconPlus, 
-  IconTrash, 
   IconX,
   IconBook,
   IconChevronDown,

@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  # === 프론트엔드 (React) ===
+  frontend:
+    # ★ 수정할 곳: 본인 Docker Hub 아이디/레포이름
+    image: knagbb/todac-frontend:latest 
+    container_name: my-frontend
+    restart: always
+    expose:
+      - "80"  # 내부는 80번, 외부는 NPM이 연결해주니 포트포워딩 X
+    networks:
+      - npm_network
+
+# ★ 중요: Nginx Proxy Manager와 같은 네트워크를 써야 서로 통신 가능
+networks:
+  npm_network:
+    external: true

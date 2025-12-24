@@ -123,7 +123,7 @@ export default function BabyForm() {
             <Group grow>
               <DateInput
                 value={birthDate}
-                onChange={setBirthDate}
+                onChange={(date) => setBirthDate(date as Date | null)}
                 label="실제 출생일"
                 placeholder="YYYY-MM-DD"
                 required
@@ -131,7 +131,7 @@ export default function BabyForm() {
               />
               <DateInput
                 value={dueDate}
-                onChange={setDueDate}
+                onChange={(date) => setDueDate(date as Date | null)}
                 label="출산 예정일"
                 placeholder="YYYY-MM-DD"
                 required

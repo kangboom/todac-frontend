@@ -13,7 +13,7 @@ interface BabyState {
   removeBaby: (babyId: string) => void;
 }
 
-export const useBabyStore = create<BabyState>((set, get) => ({
+export const useBabyStore = create<BabyState>((set) => ({
   babies: [],
   selectedBaby: null,
   isLoading: false,
@@ -51,6 +51,7 @@ export const useBabyStore = create<BabyState>((set, get) => ({
     }));
   },
 }));
+
 
 
 

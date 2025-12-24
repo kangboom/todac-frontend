@@ -1,8 +1,7 @@
 import { ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { AppShell, Burger, Group, Button, Text, Container } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { AppShell, Group, Button, Text, Container } from '@mantine/core';
 import { IconLogout, IconSettings } from '@tabler/icons-react';
 
 interface LayoutProps {
@@ -13,7 +12,6 @@ export default function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, clearAuth } = useAuthStore();
-  const [opened, { toggle }] = useDisclosure();
 
   const handleLogout = () => {
     clearAuth();
@@ -29,11 +27,6 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <AppShell
       header={{ height: 60 }}
-      navbar={{
-        width: 0,
-        breakpoint: 'sm',
-        collapsed: { mobile: !opened, desktop: true },
-      }}
       padding="md"
     >
       <AppShell.Header>
