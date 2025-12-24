@@ -29,6 +29,8 @@ jobs:
           push: true
           # ★ 아래 [본인아이디]/[레포이름] 부분을 docker-compose.yml과 똑같이 맞춰주세요!
           tags: ${{ secrets.DOCKER_USERNAME }}/todac-frontend:latest
+          build-args: |
+            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
 
       # 4. 설정 파일 배달하기 (SCP) ★ 우리가 선택한 방법 B의 핵심!
       # 내 프로젝트에 있는 docker-compose.yml을 서버로 전송합니다.
