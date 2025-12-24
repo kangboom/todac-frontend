@@ -58,7 +58,7 @@ jobs:
             docker pull ${{ secrets.DOCKER_USERNAME }}/todac-frontend:latest
             
             # 컨테이너 재실행 (이미지와 설정파일 모두 최신 상태!)
-            docker-compose up -d --build --remove-orphans
+            docker compose up -d --build --remove-orphans
             
             # 청소 (안 쓰는 옛날 이미지 삭제)
             docker image prune -f
