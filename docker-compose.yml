@@ -4,7 +4,7 @@ services:
   # === 프론트엔드 (React) ===
   frontend:
     # ★ 수정할 곳: 본인 Docker Hub 아이디/레포이름
-    image: knagbb/todac-frontend:latest 
+    image: kangbb/todac-frontend:latest 
     container_name: my-frontend
     restart: always
     expose:
