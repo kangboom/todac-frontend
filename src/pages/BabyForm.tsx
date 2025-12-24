@@ -64,8 +64,12 @@ export default function BabyForm() {
         throw new Error('필수 항목을 모두 입력해주세요.');
       }
 
-      const formattedBirthDate = birthDate.toISOString().split('T')[0];
-      const formattedDueDate = dueDate.toISOString().split('T')[0];
+      // 날짜 객체인지 확인
+      const birthDateObj = birthDate instanceof Date ? birthDate : new Date(birthDate);
+      const dueDateObj = dueDate instanceof Date ? dueDate : new Date(dueDate);
+
+      const formattedBirthDate = birthDateObj.toISOString().split('T')[0];
+      const formattedDueDate = dueDateObj.toISOString().split('T')[0];
       const weight = typeof birthWeight === 'string' ? parseFloat(birthWeight) : birthWeight;
 
       if (isEdit && id) {
