@@ -198,7 +198,7 @@ export default function Chat() {
   if (!selectedBaby) return null;
 
   return (
-    <Container size="md" h="calc(100vh - 100px)" py="md">
+    <Container size="md" h="calc(100dvh - 100px)" py={{ base: 'xs', sm: 'md' }}>
       <Paper withBorder radius="lg" h="100%" display="flex" style={{ flexDirection: 'column', overflow: 'hidden' }}>
         {/* Header */}
         <Group p="md" justify="space-between" bg="blue.0" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
