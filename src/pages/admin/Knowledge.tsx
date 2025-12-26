@@ -178,50 +178,62 @@ export default function KnowledgePage() {
           />
         </Group>
 
-        <Table striped highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>파일명</Table.Th>
-              <Table.Th>카테고리</Table.Th>
-              <Table.Th>크기</Table.Th>
-              <Table.Th>청크 수</Table.Th>
-              <Table.Th>등록일</Table.Th>
-              <Table.Th style={{ width: 80 }}>관리</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {docs.length === 0 ? (
+        <Table.ScrollContainer minWidth={800}>
+          <Table striped highlightOnHover verticalSpacing="sm">
+            <Table.Thead>
               <Table.Tr>
-                <Table.Td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>
-                  <Text c="dimmed">등록된 문서가 없습니다.</Text>
-                </Table.Td>
+                <Table.Th>파일명</Table.Th>
+                <Table.Th>카테고리</Table.Th>
+                <Table.Th>크기</Table.Th>
+                <Table.Th>청크 수</Table.Th>
+                <Table.Th>등록일</Table.Th>
+                <Table.Th style={{ width: 80 }}>관리</Table.Th>
               </Table.Tr>
-            ) : (
-              docs.map((doc) => (
-                <Table.Tr key={doc.id}>
-                  <Table.Td>{doc.filename}</Table.Td>
-                  <Table.Td>
-                    <Badge color="blue" variant="light">
-                      {doc.meta_info.category}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>{(doc.file_size / 1024).toFixed(1)} KB</Table.Td>
-                  <Table.Td>{doc.meta_info.chunk_count}</Table.Td>
-                  <Table.Td>{new Date(doc.created_at).toLocaleDateString()}</Table.Td>
-                  <Table.Td>
-                    <ActionIcon 
-                      color="red" 
-                      variant="subtle" 
-                      onClick={() => handleDelete(doc.id)}
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
+            </Table.Thead>
+            <Table.Tbody>
+              {docs.length === 0 ? (
+                <Table.Tr>
+                  <Table.Td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>
+                    <Text c="dimmed">등록된 문서가 없습니다.</Text>
                   </Table.Td>
                 </Table.Tr>
-              ))
-            )}
-          </Table.Tbody>
-        </Table>
+              ) : (
+                docs.map((doc) => (
+                  <Table.Tr key={doc.id}>
+                    <Table.Td>
+                      <Text size="sm" lineClamp={1} title={doc.filename}>
+                        {doc.filename}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge color="blue" variant="light" size="sm">
+                        {doc.meta_info.category}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{(doc.file_size / 1024).toFixed(1)} KB</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{doc.meta_info.chunk_count}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{new Date(doc.created_at).toLocaleDateString()}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <ActionIcon 
+                        color="red" 
+                        variant="subtle" 
+                        onClick={() => handleDelete(doc.id)}
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Table.Td>
+                  </Table.Tr>
+                ))
+              )}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
 
         {total > limit && (
           <Group justify="center" mt="lg">

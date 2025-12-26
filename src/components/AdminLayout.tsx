@@ -31,17 +31,26 @@ export function AdminLayout() {
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <Text fw={700} size="lg">TODAC Admin</Text>
           </Group>
-          <Group>
+          <Group gap="xs">
             <Button 
               variant="light" 
               color="blue" 
+              size="xs"
               onClick={() => navigate('/')} 
               leftSection={<IconArrowLeft size={16} />}
+              px="xs"
             >
-              서비스로 돌아가기
+              <Text visibleFrom="xs">서비스로 돌아가기</Text>
+              <Text hiddenFrom="xs">홈</Text>
             </Button>
-            <Button variant="subtle" color="red" onClick={handleLogout} leftSection={<IconLogout size={16} />}>
-              로그아웃
+            <Button 
+              variant="subtle" 
+              color="red" 
+              size="xs"
+              onClick={handleLogout} 
+              px="xs"
+            >
+              <IconLogout size={16} />
             </Button>
           </Group>
         </Group>
