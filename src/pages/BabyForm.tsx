@@ -132,6 +132,7 @@ export default function BabyForm() {
                 placeholder="YYYY-MM-DD"
                 required
                 description="예방접종 기준"
+                valueFormat="YYYY-MM-DD"
               />
               <DateInput
                 value={dueDate}
@@ -140,6 +141,7 @@ export default function BabyForm() {
                 placeholder="YYYY-MM-DD"
                 required
                 description="교정 연령/발달 평가 기준"
+                valueFormat="YYYY-MM-DD"
               />
             </Group>
 
@@ -163,6 +165,7 @@ export default function BabyForm() {
                 min={0}
                 step={0.01}
                 decimalScale={2}
+                hideControls
               />
             </Group>
 

@@ -154,7 +154,30 @@
   margin-top: 8px;
 }
 
-/* 반응형 유틸리티 */
+/* Mantine NumberInput 모바일 오버플로우 수정 */
+.mantine-NumberInput-root {
+  min-width: 0; /* Flexbox 하위 아이템 축소 허용 */
+  width: 100%;
+}
+
+.mantine-NumberInput-wrapper {
+  width: 100%;
+}
+
+.mantine-NumberInput-input {
+  padding-right: 32px !important; /* 컨트롤 버튼 공간 확보 */
+  width: 100%;
+}
+
+.mantine-NumberInput-section {
+  width: 32px !important;
+}
+
+/* 컨트롤 버튼이 입력창을 벗어나지 않도록 강제 */
+.mantine-NumberInput-controls {
+  right: 1px !important; /* 보더 안쪽으로 배치 */
+  border-left: 1px solid var(--mantine-color-gray-4);
+}
 .container {
   max-width: 1200px;
   margin: 0 auto;
