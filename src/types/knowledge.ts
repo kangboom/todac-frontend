@@ -19,3 +19,17 @@ export interface KnowledgeListResponse {
   offset: number;
 }
 
+export interface BatchDocumentResult {
+  success: boolean;
+  filename: string;
+  document: KnowledgeDoc | null;
+  error: string | null;
+}
+
+export interface BatchDocumentResponse {
+  results: BatchDocumentResult[];
+  total: number;
+  success_count: number;
+  failure_count: number;
+}
+

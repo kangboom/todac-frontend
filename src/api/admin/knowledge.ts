@@ -1,14 +1,19 @@
 import { apiClient } from '../client';
-import { KnowledgeDoc, KnowledgeListResponse } from '../../types/knowledge';
+import { KnowledgeDoc, KnowledgeListResponse, BatchDocumentResponse } from '../../types/knowledge';
 
 export const adminApi = {
-  // 지식 베이스 업로드
-  uploadKnowledge: async (file: File, category: string): Promise<KnowledgeDoc> => {
+  // 지식 베이스 업로드 (여러 파일 지원)
+  uploadKnowledge: async (files: File[], category: string): Promise<BatchDocumentResponse> => {
     const formData = new FormData();
-    formData.append('file', file);
+    
+    // 여러 파일 추가
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+    
     formData.append('category', category);
 
-    const response = await apiClient.post<KnowledgeDoc>('/api/v1/admin/knowledge/ingest', formData, {
+    const response = await apiClient.post<BatchDocumentResponse>('/api/v1/admin/knowledge/ingest', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
