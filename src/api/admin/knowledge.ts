@@ -1,5 +1,5 @@
 import { apiClient } from '../client';
-import { KnowledgeDoc, KnowledgeListResponse, BatchDocumentResponse } from '../../types/knowledge';
+import { KnowledgeListResponse, BatchDocumentResponse } from '../../types/knowledge';
 
 export const adminApi = {
   // 지식 베이스 업로드 (여러 파일 지원)
