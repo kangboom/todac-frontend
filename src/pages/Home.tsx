@@ -19,8 +19,7 @@ import {
   Menu,
   Image,
   Loader,
-  ThemeIcon,
-  rem
+  ThemeIcon
 } from '@mantine/core';
 import { 
   IconPlus, 
@@ -35,7 +34,6 @@ import {
   IconGenderFemale
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
-import { useDisclosure } from '@mantine/hooks';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -43,9 +41,6 @@ export default function Home() {
   const { user, clearAuth } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
   
-  // Drawer 대신 메뉴 등 사용을 위해
-  const [drawerOpened, { open: openDrawer, close: closeDrawer }] = useDisclosure(false);
-
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
