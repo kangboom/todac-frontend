@@ -8,10 +8,9 @@ import {
   Paper, 
   Title, 
   Container, 
-  Group, 
+  Group,
   Text,
   Stack,
-  Image,
   Box,
   Center,
   Anchor
@@ -86,12 +85,11 @@ export default function Signup() {
         <Center h="100%" px="md">
           <Stack w="100%" align="center" gap="xl">
             {/* Logo Section */}
-            <Stack gap="xs" align="center">
-              <Image src="/mascot.png" w={100} h={100} fit="contain" alt="Todac Mascot" />
-              <Title order={2} c="green.9" style={{ fontFamily: 'sans-serif', fontWeight: 800 }}>
+            <Stack gap={0} align="center">
+              <Title order={2} c="green.9" style={{ fontFamily: 'sans-serif', fontWeight: 800, fontSize: '2.5rem' }}>
                 회원가입
               </Title>
-              <Text c="dimmed" size="sm" ta="center">
+              <Text c="dimmed" size="sm" ta="center" mt="sm">
                 Todac과 함께 스마트한 육아를 시작하세요
               </Text>
             </Stack>

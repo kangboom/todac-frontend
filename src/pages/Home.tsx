@@ -26,7 +26,6 @@ import {
   IconTrash, 
   IconEdit, 
   IconMessageChatbot,
-  IconMenu2,
   IconUserCircle,
   IconLogout,
   IconSettings,
@@ -103,10 +102,8 @@ export default function Home() {
         {/* Header (Same style as Chat) */}
         <Group p="sm" justify="space-between" bg="white" style={{ zIndex: 10, borderBottom: '1px solid #eee' }}>
           <Group gap="xs">
-            <ActionIcon variant="subtle" color="gray" size="lg" style={{ visibility: 'hidden' }}>
-               <IconMenu2 size={24} />
-            </ActionIcon>
-            <Box>
+            {/* 좌측 여백 제거를 위해 visibility:hidden 아이콘 삭제하고, 바로 로고 배치 */}
+            <Box px="xs">
               <Text fw={600} size="md" lh={1.2} c="green.8">Todac</Text>
               <Text size="xs" c="dimmed">프로필 선택</Text>
             </Box>

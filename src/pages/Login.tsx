@@ -5,10 +5,9 @@ import {
   TextInput, 
   PasswordInput, 
   Button, 
-  Paper, 
-  Title, 
-  Container, 
-  Group, 
+  Paper,
+  Container,
+  Group,
   Text,
   Stack,
   Image,
@@ -57,11 +56,8 @@ export default function Login() {
         <Center h="100%" px="md">
           <Stack w="100%" align="center" gap="xl">
             {/* Logo Section */}
-            <Stack gap="xs" align="center">
-              <Image src="/mascot.png" w={120} h={120} fit="contain" alt="Todac Mascot" />
-              <Title order={1} c="green.9" style={{ fontFamily: 'sans-serif', fontWeight: 900, fontSize: '2rem' }}>
-                Todac
-              </Title>
+            <Stack gap={0} align="center">
+              <Image src="/logo.png" w={280} fit="contain" alt="Todac Logo" mb="sm" />
               <Text c="dimmed" size="sm" ta="center">
                 미숙아를 위한 똑똑한 양육 가이드
               </Text>
