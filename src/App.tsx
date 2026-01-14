@@ -28,7 +28,7 @@ function App() {
 
   return (
     <MantineProvider>
-      <Notifications />
+      <Notifications position="top-center" />
       <BrowserRouter>
         <Routes>
           {/* Public Routes */}

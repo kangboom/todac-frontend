@@ -39,6 +39,7 @@ import {
   IconArrowLeft
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -53,6 +54,9 @@ export default function Chat() {
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const [drawerOpened, { open: openDrawer, close: closeDrawer }] = useDisclosure(false);
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
+  const [deleteModalOpened, setDeleteModalOpened] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<ChatSession | null>(null);
+  const [isDeletingSession, setIsDeletingSession] = useState(false);
   
   const viewport = useRef<HTMLDivElement>(null);
 
@@ -117,21 +121,28 @@ export default function Chat() {
     closeDrawer();
   };
 
-  const deleteSession = async (e: React.MouseEvent, session: ChatSession) => {
+  const requestDeleteSession = (e: React.MouseEvent, session: ChatSession) => {
     e.stopPropagation();
-    if (!confirm('이 채팅방을 삭제하시겠습니까?')) return;
+    setSessionToDelete(session);
+    setDeleteModalOpened(true);
+  };
 
+  const confirmDeleteSession = async () => {
+    if (!sessionToDelete) return;
+    setIsDeletingSession(true);
     try {
-      await chatApi.deleteSession(session.id);
-      if (sessionId === session.id) {
+      await chatApi.deleteSession(sessionToDelete.id);
+      if (sessionId === sessionToDelete.id) {
         startNewChat();
       }
       await loadSessions();
       notifications.show({
         title: '삭제 완료',
         message: '채팅방이 삭제되었습니다.',
-        color: 'blue',
+        color: 'green',
       });
+      setDeleteModalOpened(false);
+      setSessionToDelete(null);
     } catch (error) {
       console.error('Failed to delete session:', error);
       notifications.show({
@@ -139,6 +150,8 @@ export default function Chat() {
         message: '채팅방 삭제에 실패했습니다.',
         color: 'red',
       });
+    } finally {
+      setIsDeletingSession(false);
     }
   };
 
@@ -214,6 +227,21 @@ export default function Chat() {
   return (
     <Container fluid h="100dvh" p={0} m={0}>
       <Paper h="100%" display="flex" style={{ flexDirection: 'column', overflow: 'hidden' }} radius={0} bg="white">
+        <ConfirmModal
+          opened={deleteModalOpened}
+          title="채팅방 삭제"
+          message="이 채팅방을 삭제하시겠습니까?"
+          confirmLabel="삭제"
+          confirmColor="red"
+          loading={isDeletingSession}
+          onConfirm={confirmDeleteSession}
+          onClose={() => {
+            if (isDeletingSession) return;
+            setDeleteModalOpened(false);
+            setSessionToDelete(null);
+          }}
+        />
+
         {/* Header */}
         <Group p="sm" justify="space-between" bg="white" style={{ zIndex: 10, borderBottom: '1px solid #eee' }}>
           <Group gap="xs">
@@ -445,7 +473,7 @@ export default function Chat() {
                           variant="subtle" 
                           color="gray" 
                           size="sm"
-                          onClick={(e) => deleteSession(e, session)}
+                          onClick={(e) => requestDeleteSession(e, session)}
                         >
                           <IconX size={14} />
                         </ActionIcon>

@@ -33,12 +33,20 @@ import {
   IconGenderFemale
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function Home() {
   const navigate = useNavigate();
   const { babies, setSelectedBaby, fetchBabies, removeBaby } = useBabyStore();
   const { user, clearAuth } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [deleteModalOpened, setDeleteModalOpened] = useState(false);
+  const [babyToDelete, setBabyToDelete] = useState<Baby | null>(null);
+  const [isDeletingBaby, setIsDeletingBaby] = useState(false);
+  
+  // 현재 보고 있는 카드의 인덱스 (0부터 시작)
+  const [activeIndex, setActiveIndex] = useState(0);
   
   useEffect(() => {
     const loadData = async () => {
@@ -54,18 +62,26 @@ export default function Home() {
     navigate('/chat');
   };
 
-  const handleDeleteBaby = async (e: React.MouseEvent, babyId: string) => {
+  const requestDeleteBaby = (e: React.MouseEvent, baby: Baby) => {
     e.stopPropagation();
-    if (!confirm('정말로 이 프로필을 삭제하시겠습니까?')) return;
+    setBabyToDelete(baby);
+    setDeleteModalOpened(true);
+  };
 
+  const confirmDeleteBaby = async () => {
+    if (!babyToDelete) return;
+    setIsDeletingBaby(true);
+    
     try {
-      await babyApi.delete(babyId);
-      removeBaby(babyId);
+      await babyApi.delete(babyToDelete.id);
+      removeBaby(babyToDelete.id);
       notifications.show({
         title: '삭제 완료',
         message: '아기 프로필이 삭제되었습니다.',
         color: 'green',
       });
+      setDeleteModalOpened(false);
+      setBabyToDelete(null);
     } catch (error) {
       console.error('Failed to delete baby:', error);
       notifications.show({
@@ -73,6 +89,8 @@ export default function Home() {
         message: '삭제 중 오류가 발생했습니다.',
         color: 'red',
       });
+    } finally {
+      setIsDeletingBaby(false);
     }
   };
 
@@ -96,9 +114,38 @@ export default function Home() {
     return { bornDays: bornDiff, correctedDays: now < due ? -diffDays : diffDays };
   };
 
+  // 스크롤 이벤트 핸들러: 현재 보이는 카드의 인덱스를 계산
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    const scrollLeft = container.scrollLeft;
+    const cardWidth = container.offsetWidth; // 카드가 화면 너비(100%)를 차지하므로
+    
+    // 반올림하여 가장 가까운 인덱스를 찾음
+    const newIndex = Math.round(scrollLeft / cardWidth);
+    
+    if (newIndex !== activeIndex) {
+      setActiveIndex(newIndex);
+    }
+  };
+
   return (
     <Container fluid h="100dvh" p={0} m={0} bg="gray.0">
       <Stack h="100%" gap={0}>
+        <ConfirmModal
+          opened={deleteModalOpened}
+          title="프로필 삭제"
+          message={`'${babyToDelete?.name}' 프로필을 정말 삭제하시겠습니까?`}
+          confirmLabel="삭제"
+          confirmColor="red"
+          loading={isDeletingBaby}
+          onConfirm={confirmDeleteBaby}
+          onClose={() => {
+            if (isDeletingBaby) return;
+            setDeleteModalOpened(false);
+            setBabyToDelete(null);
+          }}
+        />
+
         {/* Header (Same style as Chat) */}
         <Group p="sm" justify="space-between" bg="white" style={{ zIndex: 10, borderBottom: '1px solid #eee' }}>
           <Group gap="xs">
@@ -170,6 +217,7 @@ export default function Home() {
             <Box 
               w="100%" 
               h="100%" 
+              onScroll={handleScroll} // 스크롤 이벤트 연결
               style={{ 
                 overflowX: 'auto', 
                 whiteSpace: 'nowrap', 
@@ -206,13 +254,13 @@ export default function Home() {
                             <ActionIcon variant="subtle" color="gray" onClick={(e) => { e.stopPropagation(); navigate(`/babies/${baby.id}/edit`); }}>
                               <IconEdit size={18} />
                             </ActionIcon>
-                            <ActionIcon variant="subtle" color="red" onClick={(e) => handleDeleteBaby(e, baby.id)}>
+                            <ActionIcon variant="subtle" color="red" onClick={(e) => requestDeleteBaby(e, baby)}>
                               <IconTrash size={18} />
                             </ActionIcon>
                          </Group>
 
                          <Avatar size={120} radius={120} color="green" variant="light" mt="lg">
-                           {baby.gender === 'BOY' ? <IconGenderMale size={60} /> : <IconGenderFemale size={60} />}
+                           {baby.gender === 'M' || baby.gender === 'BOY' ? <IconGenderMale size={60} /> : <IconGenderFemale size={60} />}
                          </Avatar>
                          
                          <Stack gap={0} align="center">
@@ -229,7 +277,7 @@ export default function Home() {
                             <Stack gap="xs">
                               <Group justify="space-between">
                                 <Text size="sm" c="dimmed">출생 체중</Text>
-                                <Text fw={500}>{baby.birth_weight}g</Text>
+                                <Text fw={500}>{baby.birth_weight}kg</Text>
                               </Group>
                               <Group justify="space-between">
                                 <Text size="sm" c="dimmed">출생 키</Text>
@@ -288,14 +336,22 @@ export default function Home() {
           )}
         </Box>
         
-        {/* Indicator Dots (Optional, if multiple babies) */}
+        {/* Indicator Dots - Active Index Logic Applied */}
         {babies.length > 0 && (
           <Center p="md" pb="xl">
              <Group gap="xs">
-               {babies.map((_, idx) => (
-                 <Box key={idx} w={8} h={8} bg="green.3" style={{ borderRadius: '50%' }} />
+               {Array.from({ length: babies.length + 1 }).map((_, idx) => (
+                 <Box 
+                    key={idx} 
+                    w={8} 
+                    h={8} 
+                    bg={activeIndex === idx ? "green.6" : "gray.3"} 
+                    style={{ 
+                        borderRadius: '50%',
+                        transition: 'background-color 0.3s ease'
+                    }} 
+                />
                ))}
-               <Box w={8} h={8} bg="gray.3" style={{ borderRadius: '50%' }} />
              </Group>
           </Center>
         )}

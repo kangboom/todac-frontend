@@ -64,7 +64,19 @@ export default function BabyForm() {
         setName(baby.name);
         setBirthDate(new Date(baby.birth_date));
         setDueDate(new Date(baby.due_date));
-        setGender(baby.gender || null);
+        
+        // 서버는 M/F를 사용하지만, 과거 데이터(BOY/GIRL)가 있을 수 있어 호환 처리
+        const normalizedGender =
+          baby.gender === 'M' || baby.gender === 'F'
+            ? baby.gender
+            : baby.gender === 'BOY'
+              ? 'M'
+              : baby.gender === 'GIRL'
+                ? 'F'
+                : null;
+        setGender(normalizedGender);
+        
+        // 백엔드가 이미 kg 단위이므로 변환 없이 그대로 사용
         setBirthWeight(baby.birth_weight);
         setBirthHeight(baby.birth_height || '');
         setMedicalHistory(baby.medical_history.join(', '));
@@ -90,15 +102,19 @@ export default function BabyForm() {
 
       const formattedBirthDate = birthDateObj.toISOString().split('T')[0];
       const formattedDueDate = dueDateObj.toISOString().split('T')[0];
+      
       const weight = typeof birthWeight === 'string' ? parseFloat(birthWeight) : birthWeight;
       const height = typeof birthHeight === 'string' ? parseFloat(birthHeight) : birthHeight;
+
+      // Ensure gender is M or F
+      const submitGender = (gender === 'M' || gender === 'F') ? gender : null;
 
       if (isEdit && id) {
         const updateData: BabyUpdateRequest = {
           name,
           birth_date: formattedBirthDate,
           due_date: formattedDueDate,
-          gender: (gender as 'M' | 'F' | 'BOY' | 'GIRL') || null,
+          gender: submitGender, // M or F or null
           birth_weight: weight,
           birth_height: height || undefined,
           medical_history: medicalHistoryList,
@@ -115,7 +131,7 @@ export default function BabyForm() {
           name,
           birth_date: formattedBirthDate,
           due_date: formattedDueDate,
-          gender: (gender as 'M' | 'F' | 'BOY' | 'GIRL') || null,
+          gender: submitGender, // M or F or null
           birth_weight: weight,
           birth_height: height || undefined,
           medical_history: medicalHistoryList,
@@ -199,15 +215,16 @@ export default function BabyForm() {
         </Group>
 
         {/* Content */}
-        <Center flex={1} p="md" style={{ overflowY: 'auto' }}>
-            <Paper w="100%" maw={500} shadow="sm" radius="lg" p="xl" bg="white">
-                <Stack gap="lg">
-                    <Center mb="xs">
+        <Box flex={1} style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column' }} p="md">
+            {/* margin: auto를 사용하여 세로 중앙 정렬하되, 넘치면 스크롤 가능하게 함 */}
+            <Paper w="100%" maw={500} shadow="sm" radius="lg" p="xl" bg="white" style={{ margin: 'auto' }}>
+                <Stack gap="md" pt={0}>
+                    <Center>
                         <Stack gap={0} align="center">
-                            <Title order={3} c="gray.8">
+                            <Title order={4} c="gray.8">
                                 {isEdit ? '정보 수정' : '아기 등록'}
                             </Title>
-                            <Text size="sm" c="dimmed">
+                            <Text size="xs" c="dimmed">
                                 {isEdit ? '수정할 정보를 입력해주세요' : '우리 아기를 소개해주세요'}
                             </Text>
                         </Stack>
@@ -232,14 +249,14 @@ export default function BabyForm() {
                             label="성별"
                             placeholder="선택"
                             data={[
-                                { value: 'BOY', label: '남아' },
-                                { value: 'GIRL', label: '여아' },
+                                { value: 'M', label: '남아' },
+                                { value: 'F', label: '여아' },
                             ]}
                             value={gender}
                             onChange={setGender}
                             radius="md"
                             size="md"
-                            leftSection={gender === 'BOY' ? <IconGenderMale size={16} /> : gender === 'GIRL' ? <IconGenderFemale size={16} /> : <IconUser size={16} />}
+                            leftSection={gender === 'M' ? <IconGenderMale size={16} /> : gender === 'F' ? <IconGenderFemale size={16} /> : <IconUser size={16} />}
                             variant="filled"
                         />
                     </Group>
@@ -275,16 +292,17 @@ export default function BabyForm() {
 
                     <Group grow>
                         <NumberInput
-                            label="출생 체중 (g)"
-                            placeholder="예: 2500"
+                            label="출생 체중 (kg)"
+                            placeholder="예: 2.5"
                             required
                             value={birthWeight}
                             onChange={setBirthWeight}
                             min={0}
+                            decimalScale={2}
                             radius="md"
                             size="md"
                             hideControls
-                            suffix=" g"
+                            suffix=" kg"
                             leftSection={<IconScale size={16} />}
                             variant="filled"
                         />
@@ -328,7 +346,7 @@ export default function BabyForm() {
                     </Button>
                 </Stack>
             </Paper>
-        </Center>
+        </Box>
       </Stack>
     </Container>
   );
