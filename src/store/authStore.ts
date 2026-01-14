@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import type { User } from '../types';
+import { authApi } from '../api/auth';
+import type { User, LoginRequest, SignupRequest } from '../types';
 
 interface AuthState {
   user: User | null;
@@ -8,6 +9,8 @@ interface AuthState {
   setAuth: (user: User, token: string) => void;
   clearAuth: () => void;
   initializeAuth: () => void;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (data: SignupRequest) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -40,19 +43,34 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     }
   },
+
+  login: async (email, password) => {
+    try {
+      const response = await authApi.login({ email, password });
+      localStorage.setItem('access_token', response.access_token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      set({ 
+        user: response.user, 
+        token: response.access_token, 
+        isAuthenticated: true 
+      });
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  signup: async (data) => {
+    try {
+      const response = await authApi.signup(data);
+      localStorage.setItem('access_token', response.access_token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      set({ 
+        user: response.user, 
+        token: response.access_token, 
+        isAuthenticated: true 
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
 }));
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

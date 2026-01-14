@@ -12,8 +12,9 @@ export interface Baby {
   name: string;
   birth_date: string;
   due_date: string;
-  gender: 'M' | 'F' | null;
+  gender: 'M' | 'F' | 'BOY' | 'GIRL' | null;
   birth_weight: number;
+  birth_height?: number;
   medical_history: string[];
   created_at: string;
   updated_at: string;
@@ -53,11 +54,8 @@ export interface ChatSessionDetail extends ChatSession {
 }
 
 export interface AuthResponse {
-  token: {
-    access_token: string;
-    token_type: string;
-    expires_in: number;
-  };
+  access_token: string;
+  token_type: string;
   user: User;
 }
 
@@ -76,8 +74,9 @@ export interface BabyCreateRequest {
   name: string;
   birth_date: string;
   due_date: string;
-  gender?: 'M' | 'F' | null;
+  gender?: 'M' | 'F' | 'BOY' | 'GIRL' | null;
   birth_weight: number;
+  birth_height?: number;
   medical_history?: string[];
 }
 
@@ -85,8 +84,9 @@ export interface BabyUpdateRequest {
   name?: string;
   birth_date?: string;
   due_date?: string;
-  gender?: 'M' | 'F' | null;
+  gender?: 'M' | 'F' | 'BOY' | 'GIRL' | null;
   birth_weight?: number;
+  birth_height?: number;
   medical_history?: string[];
 }
 
@@ -103,5 +103,3 @@ export interface ChatMessageSendResponse {
   rag_sources?: Array<Record<string, unknown>>;
   response_time: number;
 }
-
-

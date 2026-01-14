@@ -47,9 +47,7 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Layout>
-                  <Home />
-                </Layout>
+                <Home />
               </ProtectedRoute>
             }
           />
@@ -57,9 +55,7 @@ function App() {
             path="/babies/new"
             element={
               <ProtectedRoute>
-                <Layout>
-                  <BabyForm />
-                </Layout>
+                <BabyForm />
               </ProtectedRoute>
             }
           />
@@ -67,9 +63,7 @@ function App() {
             path="/babies/:id/edit"
             element={
               <ProtectedRoute>
-                <Layout>
-                  <BabyForm />
-                </Layout>
+                <BabyForm />
               </ProtectedRoute>
             }
           />
@@ -77,9 +71,7 @@ function App() {
             path="/chat"
             element={
               <ProtectedRoute>
-                <Layout>
-                  <Chat />
-                </Layout>
+                <Chat />
               </ProtectedRoute>
             }
           />

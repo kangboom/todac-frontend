@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBabyStore } from '../store/babyStore';
+import { useAuthStore } from '../store/authStore';
 import { chatApi } from '../api/chat';
 import type { ChatMessage, ChatSession, RAGSource } from '../types';
 import {
@@ -19,7 +20,9 @@ import {
   Drawer,
   Box,
   Collapse,
-  Center
+  Center,
+  Menu,
+  Image
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { 
@@ -29,13 +32,19 @@ import {
   IconX,
   IconBook,
   IconChevronDown,
-  IconChevronUp
+  IconChevronUp,
+  IconLogout,
+  IconUserCircle,
+  IconSettings,
+  IconArrowLeft
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 
 export default function Chat() {
   const navigate = useNavigate();
   const { selectedBaby } = useBabyStore();
+  const { user, clearAuth } = useAuthStore();
+  
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -195,35 +204,76 @@ export default function Chat() {
     });
   };
 
+  const handleLogout = () => {
+    clearAuth();
+    navigate('/login');
+  };
+
   if (!selectedBaby) return null;
 
   return (
-    <Container size="md" h="calc(100dvh - 100px)" py={{ base: 'xs', sm: 'md' }}>
-      <Paper withBorder radius="lg" h="100%" display="flex" style={{ flexDirection: 'column', overflow: 'hidden' }}>
+    <Container fluid h="100dvh" p={0} m={0}>
+      <Paper h="100%" display="flex" style={{ flexDirection: 'column', overflow: 'hidden' }} radius={0} bg="white">
         {/* Header */}
-        <Group p="md" justify="space-between" bg="blue.0" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
-          <Group>
-            <ActionIcon variant="subtle" onClick={openDrawer} display={{ base: 'block', sm: 'block' }}>
-              <IconMenu2 size={20} />
+        <Group p="sm" justify="space-between" bg="white" style={{ zIndex: 10, borderBottom: '1px solid #eee' }}>
+          <Group gap="xs">
+            <ActionIcon variant="subtle" color="gray" onClick={openDrawer} size="lg">
+              <IconMenu2 size={24} />
             </ActionIcon>
-            <div>
-              <Text fw={700}>{selectedBaby.name}</Text>
-              <Text size="xs" c="dimmed">미숙아 챗봇</Text>
-            </div>
+            <ActionIcon variant="subtle" color="gray" onClick={() => navigate('/')} size="lg">
+              <IconArrowLeft size={24} />
+            </ActionIcon>
+            <Box>
+              <Text fw={600} size="md" lh={1.2} c="green.8">Todac</Text>
+              <Text size="xs" c="dimmed">{selectedBaby.name}</Text>
+            </Box>
           </Group>
-          <Button variant="light" size="xs" onClick={() => navigate('/')}>
-            나가기
-          </Button>
+          <Group gap="xs">
+            <Menu shadow="md" width={200} position="bottom-end">
+              <Menu.Target>
+                <ActionIcon variant="subtle" color="gray" size="lg" radius="xl">
+                   <Avatar src={null} alt={user?.nickname} radius="xl" size="sm" color="green">
+                     {user?.nickname?.charAt(0)}
+                   </Avatar>
+                </ActionIcon>
+              </Menu.Target>
+
+              <Menu.Dropdown>
+                <Menu.Label>사용자</Menu.Label>
+                <Menu.Item leftSection={<IconUserCircle size={14} />}>
+                  마이페이지
+                </Menu.Item>
+                {user?.role === 'ADMIN' && (
+                  <Menu.Item 
+                    leftSection={<IconSettings size={14} />}
+                    onClick={() => navigate('/admin')}
+                  >
+                    관리자 설정
+                  </Menu.Item>
+                )}
+                
+                <Menu.Divider />
+                
+                <Menu.Item 
+                  color="red" 
+                  leftSection={<IconLogout size={14} />}
+                  onClick={handleLogout}
+                >
+                  로그아웃
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
         </Group>
 
         {/* Chat Area */}
-        <ScrollArea viewportRef={viewport} flex={1} p="md" bg="gray.0">
-          <Stack gap="md">
+        <ScrollArea viewportRef={viewport} flex={1} px="md" pb="md" bg="white">
+          <Stack gap="xl" py="lg" maw={800} mx="auto">
             {messages.length === 0 && (
-              <Center h={200}>
-                <Stack align="center" gap="xs">
-                  <Text size="lg">👋 안녕하세요!</Text>
-                  <Text size="sm" c="dimmed">{selectedBaby.name}에 대해 궁금한 점을 물어보세요.</Text>
+              <Center h={400}>
+                <Stack align="center" gap="md">
+                  <Image src="/mascot.png" w={120} h={120} fit="contain" alt="Todac Mascot" />
+                  <Text size="md" c="dimmed">미숙아를 돌보며 걱정되는 점을 편하게 물어보세요😀</Text>
                 </Stack>
               </Center>
             )}
@@ -233,28 +283,40 @@ export default function Chat() {
                 key={msg.message_id} 
                 justify={msg.role === 'USER' ? 'flex-end' : 'flex-start'} 
                 align="flex-start"
+                wrap="nowrap"
               >
                 {msg.role === 'ASSISTANT' && (
-                  <Avatar src={null} alt="AI" color="blue" radius="xl">AI</Avatar>
+                  <Avatar src="/mascot.png" alt="Todac" color="transparent" radius="xl" size="md" />
                 )}
                 
-                <Stack gap={4} maw="75%">
-                  <Paper
-                    p="sm"
-                    radius="lg"
-                    bg={msg.role === 'USER' ? 'blue.6' : 'white'}
-                    c={msg.role === 'USER' ? 'white' : 'black'}
-                    shadow="sm"
-                  >
-                    {msg.is_emergency && (
-                      <Badge color="red" variant="filled" mb="xs">⚠️ 응급 상황 감지</Badge>
-                    )}
-                    <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</Text>
-                  </Paper>
+                <Stack gap={4} maw="85%">
+                  {msg.role === 'USER' ? (
+                     <Paper
+                       px="lg"
+                       py="sm"
+                       radius="xl"
+                       bg="green.1"
+                       c="black"
+                     >
+                       <Text size="md" style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</Text>
+                     </Paper>
+                  ) : (
+                     <Paper
+                        px="lg"
+                        py="sm"
+                        radius="xl"
+                        bg="gray.1"
+                     >
+                        {msg.is_emergency && (
+                          <Badge color="red" variant="filled" mb="xs">⚠️ 응급 상황 감지</Badge>
+                        )}
+                        <Text size="md" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{msg.content}</Text>
+                     </Paper>
+                  )}
 
                   {/* Reference Docs */}
                   {msg.role === 'ASSISTANT' && msg.rag_sources && msg.rag_sources.length > 0 && (
-                    <Box>
+                    <Box pl="xs">
                       <Button 
                         variant="subtle" 
                         size="xs" 
@@ -281,48 +343,55 @@ export default function Chat() {
                       </Collapse>
                     </Box>
                   )}
-                  
-                  <Text size="xs" c="dimmed" ta={msg.role === 'USER' ? 'right' : 'left'}>
-                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
                 </Stack>
               </Group>
             ))}
             {isLoading && (
               <Group align="flex-start">
-                <Avatar src={null} alt="AI" color="blue" radius="xl">AI</Avatar>
-                <Paper p="sm" radius="lg" bg="white" shadow="sm">
-                  <Loader size="xs" type="dots" />
-                </Paper>
+                <Avatar src="/mascot.png" alt="Todac" color="transparent" radius="xl" size="md" />
+                <Loader size="xs" type="dots" color="gray" ml="xs" mt="xs" />
               </Group>
             )}
           </Stack>
         </ScrollArea>
 
         {/* Input Area */}
-        <Box p="md" bg="white" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
-          <form onSubmit={handleSendMessage}>
-            <Group align="flex-end">
-              <TextInput
-                placeholder="메시지를 입력하세요..."
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                style={{ flex: 1 }}
-                disabled={isLoading}
-                rightSection={
-                  <ActionIcon 
-                    type="submit" 
-                    variant="filled" 
-                    color="blue" 
-                    radius="xl"
-                    disabled={!inputMessage.trim() || isLoading}
-                  >
-                    <IconSend size={18} />
-                  </ActionIcon>
-                }
-              />
-            </Group>
-          </form>
+        <Box p="md" bg="white">
+          <Box maw={800} mx="auto">
+            <form onSubmit={handleSendMessage}>
+                <TextInput
+                  size="lg"
+                  radius="xl"
+                  placeholder="Todac에게 물어보기"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  disabled={isLoading}
+                  styles={{ 
+                    input: { 
+                      backgroundColor: 'var(--mantine-color-gray-1)', 
+                      border: 'none',
+                      fontSize: '16px',
+                      paddingLeft: '20px'
+                    } 
+                  }}
+                  rightSection={
+                    <ActionIcon 
+                      type="submit" 
+                      variant="transparent" 
+                      color={inputMessage.trim() ? "blue" : "gray"}
+                      size="lg"
+                      disabled={!inputMessage.trim() || isLoading}
+                    >
+                      <IconSend size={24} />
+                    </ActionIcon>
+                  }
+                  rightSectionWidth={50}
+                />
+            </form>
+            <Text size="xs" c="dimmed" ta="center" mt="xs" style={{ fontSize: '0.7rem' }}>
+              ⚠️ 이 정보는 의학적 진단을 대신할 수 없습니다.
+            </Text>
+          </Box>
         </Box>
       </Paper>
 
@@ -340,6 +409,7 @@ export default function Chat() {
             leftSection={<IconPlus size={16} />} 
             onClick={startNewChat}
             variant="light"
+            color="green"
           >
             새 채팅 시작
           </Button>
@@ -356,10 +426,10 @@ export default function Chat() {
                     key={session.id}
                     p="sm"
                     withBorder={sessionId !== session.id}
-                    bg={sessionId === session.id ? 'blue.0' : 'transparent'}
+                    bg={sessionId === session.id ? 'green.0' : 'transparent'}
                     style={{ 
                       cursor: 'pointer',
-                      borderColor: sessionId === session.id ? 'var(--mantine-color-blue-2)' : undefined
+                      borderColor: sessionId === session.id ? 'var(--mantine-color-green-2)' : undefined
                     }}
                     onClick={() => loadSessionMessages(session)}
                   >

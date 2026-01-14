@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBabyStore } from '../store/babyStore';
+import { useAuthStore } from '../store/authStore';
 import { babyApi } from '../api/baby';
 import type { BabyCreateRequest, BabyUpdateRequest } from '../types';
 import {
@@ -13,17 +14,37 @@ import {
   Button,
   Group,
   Stack,
-  Alert,
-  Textarea
+  Textarea,
+  ActionIcon,
+  Box,
+  Text,
+  Center,
+  Divider,
+  Menu,
+  Avatar
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
-import { IconAlertCircle } from '@tabler/icons-react';
+import { 
+  IconArrowLeft, 
+  IconCheck, 
+  IconGenderFemale, 
+  IconGenderMale,
+  IconUser,
+  IconCalendar,
+  IconScale,
+  IconRuler,
+  IconUserCircle,
+  IconLogout,
+  IconSettings
+} from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
 import '@mantine/dates/styles.css';
 
 export default function BabyForm() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { addBaby, updateBaby, babies } = useBabyStore();
+  const { user, clearAuth } = useAuthStore();
   const isEdit = !!id;
 
   const [name, setName] = useState('');
@@ -31,9 +52,9 @@ export default function BabyForm() {
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [gender, setGender] = useState<string | null>(null);
   const [birthWeight, setBirthWeight] = useState<number | string>('');
+  const [birthHeight, setBirthHeight] = useState<number | string>('');
   const [medicalHistory, setMedicalHistory] = useState('');
   
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -45,6 +66,7 @@ export default function BabyForm() {
         setDueDate(new Date(baby.due_date));
         setGender(baby.gender || null);
         setBirthWeight(baby.birth_weight);
+        setBirthHeight(baby.birth_height || '');
         setMedicalHistory(baby.medical_history.join(', '));
       }
     }
@@ -52,7 +74,6 @@ export default function BabyForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setIsLoading(true);
 
     try {
@@ -64,136 +85,251 @@ export default function BabyForm() {
         throw new Error('필수 항목을 모두 입력해주세요.');
       }
 
-      // 날짜 객체인지 확인
       const birthDateObj = birthDate instanceof Date ? birthDate : new Date(birthDate);
       const dueDateObj = dueDate instanceof Date ? dueDate : new Date(dueDate);
 
       const formattedBirthDate = birthDateObj.toISOString().split('T')[0];
       const formattedDueDate = dueDateObj.toISOString().split('T')[0];
       const weight = typeof birthWeight === 'string' ? parseFloat(birthWeight) : birthWeight;
+      const height = typeof birthHeight === 'string' ? parseFloat(birthHeight) : birthHeight;
 
       if (isEdit && id) {
         const updateData: BabyUpdateRequest = {
           name,
           birth_date: formattedBirthDate,
           due_date: formattedDueDate,
-          gender: (gender as 'M' | 'F') || null,
+          gender: (gender as 'M' | 'F' | 'BOY' | 'GIRL') || null,
           birth_weight: weight,
+          birth_height: height || undefined,
           medical_history: medicalHistoryList,
         };
         const updated = await babyApi.update(id, updateData);
         updateBaby(updated);
+        notifications.show({
+            title: '수정 완료',
+            message: '아기 프로필이 수정되었습니다.',
+            color: 'green',
+        });
       } else {
         const createData: BabyCreateRequest = {
           name,
           birth_date: formattedBirthDate,
           due_date: formattedDueDate,
-          gender: (gender as 'M' | 'F') || null,
+          gender: (gender as 'M' | 'F' | 'BOY' | 'GIRL') || null,
           birth_weight: weight,
+          birth_height: height || undefined,
           medical_history: medicalHistoryList,
         };
         const created = await babyApi.create(createData);
         addBaby(created);
+        notifications.show({
+            title: '등록 완료',
+            message: '아기 프로필이 등록되었습니다.',
+            color: 'green',
+        });
       }
       navigate('/');
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message || '저장에 실패했습니다.');
-      } else {
-        setError('저장에 실패했습니다.');
-      }
+      const msg = err instanceof Error ? err.message : '저장에 실패했습니다.';
+      notifications.show({
+        title: '오류',
+        message: msg,
+        color: 'red',
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleLogout = () => {
+    clearAuth();
+    navigate('/login');
+  };
+
   return (
-    <Container size="sm" py="xl">
-      <Title order={2} mb="lg">
-        {isEdit ? '아기 프로필 수정' : '아기 프로필 등록'}
-      </Title>
+    <Container fluid h="100dvh" p={0} m={0} bg="gray.0">
+      <Stack h="100%" gap={0}>
+        {/* Header */}
+        <Group p="sm" justify="space-between" bg="white" style={{ zIndex: 10, borderBottom: '1px solid #eee' }}>
+          <Group gap="xs">
+            <ActionIcon variant="subtle" color="gray" onClick={() => navigate('/')} size="lg">
+              <IconArrowLeft size={24} />
+            </ActionIcon>
+            <Box>
+                <Text fw={600} size="md" lh={1.2} c="green.8">Todac</Text>
+                <Text size="xs" c="dimmed">
+                    {isEdit ? '프로필 수정' : '아기 등록'}
+                </Text>
+            </Box>
+          </Group>
+          <Group gap="xs">
+            <Menu shadow="md" width={200} position="bottom-end">
+              <Menu.Target>
+                <ActionIcon variant="subtle" color="gray" size="lg" radius="xl">
+                   <Avatar src={null} alt={user?.nickname} radius="xl" size="sm" color="green">
+                     {user?.nickname?.charAt(0)}
+                   </Avatar>
+                </ActionIcon>
+              </Menu.Target>
 
-      <Paper withBorder shadow="sm" p="lg" radius="md">
-        <form onSubmit={handleSubmit}>
-          <Stack>
-            <TextInput
-              label="아기 이름/태명"
-              placeholder="이름을 입력하세요"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+              <Menu.Dropdown>
+                <Menu.Label>사용자</Menu.Label>
+                <Menu.Item leftSection={<IconUserCircle size={14} />}>
+                  마이페이지
+                </Menu.Item>
+                {user?.role === 'ADMIN' && (
+                  <Menu.Item 
+                    leftSection={<IconSettings size={14} />}
+                    onClick={() => navigate('/admin')}
+                  >
+                    관리자 설정
+                  </Menu.Item>
+                )}
+                <Menu.Divider />
+                <Menu.Item 
+                  color="red" 
+                  leftSection={<IconLogout size={14} />}
+                  onClick={handleLogout}
+                >
+                  로그아웃
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
+        </Group>
 
-            <Group grow>
-              <DateInput
-                value={birthDate}
-                onChange={(date) => setBirthDate(date as Date | null)}
-                label="실제 출생일"
-                placeholder="YYYY-MM-DD"
-                required
-                description="예방접종 기준"
-                valueFormat="YYYY-MM-DD"
-              />
-              <DateInput
-                value={dueDate}
-                onChange={(date) => setDueDate(date as Date | null)}
-                label="출산 예정일"
-                placeholder="YYYY-MM-DD"
-                required
-                description="교정 연령/발달 평가 기준"
-                valueFormat="YYYY-MM-DD"
-              />
-            </Group>
+        {/* Content */}
+        <Center flex={1} p="md" style={{ overflowY: 'auto' }}>
+            <Paper w="100%" maw={500} shadow="sm" radius="lg" p="xl" bg="white">
+                <Stack gap="lg">
+                    <Center mb="xs">
+                        <Stack gap={0} align="center">
+                            <Title order={3} c="gray.8">
+                                {isEdit ? '정보 수정' : '아기 등록'}
+                            </Title>
+                            <Text size="sm" c="dimmed">
+                                {isEdit ? '수정할 정보를 입력해주세요' : '우리 아기를 소개해주세요'}
+                            </Text>
+                        </Stack>
+                    </Center>
 
-            <Group grow>
-              <Select
-                label="성별"
-                placeholder="선택하세요"
-                data={[
-                  { value: 'M', label: '남아' },
-                  { value: 'F', label: '여아' },
-                ]}
-                value={gender}
-                onChange={setGender}
-              />
-              <NumberInput
-                label="출생 체중 (kg)"
-                placeholder="예: 2.5"
-                required
-                value={birthWeight}
-                onChange={setBirthWeight}
-                min={0}
-                step={0.01}
-                decimalScale={2}
-                hideControls
-              />
-            </Group>
+                    <Divider label="기본 정보" labelPosition="center" color="green.2" />
 
-            <Textarea
-              label="기저질환"
-              placeholder="예: RDS, 황달 (쉼표로 구분)"
-              value={medicalHistory}
-              onChange={(e) => setMedicalHistory(e.target.value)}
-              minRows={2}
-            />
+                    <TextInput
+                        label="이름/태명"
+                        placeholder="예: 튼튼이"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        radius="md"
+                        size="md"
+                        leftSection={<IconUser size={16} />}
+                        variant="filled"
+                    />
 
-            {error && (
-              <Alert icon={<IconAlertCircle size={16} />} title="오류" color="red">
-                {error}
-              </Alert>
-            )}
+                    <Group grow>
+                        <Select
+                            label="성별"
+                            placeholder="선택"
+                            data={[
+                                { value: 'BOY', label: '남아' },
+                                { value: 'GIRL', label: '여아' },
+                            ]}
+                            value={gender}
+                            onChange={setGender}
+                            radius="md"
+                            size="md"
+                            leftSection={gender === 'BOY' ? <IconGenderMale size={16} /> : gender === 'GIRL' ? <IconGenderFemale size={16} /> : <IconUser size={16} />}
+                            variant="filled"
+                        />
+                    </Group>
 
-            <Group justify="flex-end" mt="md">
-              <Button variant="default" onClick={() => navigate('/')}>
-                취소
-              </Button>
-              <Button type="submit" loading={isLoading}>
-                저장
-              </Button>
-            </Group>
-          </Stack>
-        </form>
-      </Paper>
+                    <Group grow>
+                        <DateInput
+                            value={birthDate}
+                            onChange={(date) => setBirthDate(date as Date | null)}
+                            label="실제 출생일"
+                            placeholder="YYYY-MM-DD"
+                            required
+                            valueFormat="YYYY-MM-DD"
+                            radius="md"
+                            size="md"
+                            leftSection={<IconCalendar size={16} />}
+                            variant="filled"
+                        />
+                        <DateInput
+                            value={dueDate}
+                            onChange={(date) => setDueDate(date as Date | null)}
+                            label="출산 예정일"
+                            placeholder="YYYY-MM-DD"
+                            required
+                            valueFormat="YYYY-MM-DD"
+                            radius="md"
+                            size="md"
+                            leftSection={<IconCalendar size={16} />}
+                            variant="filled"
+                        />
+                    </Group>
+
+                    <Divider label="신체 정보" labelPosition="center" color="green.2" mt="sm" />
+
+                    <Group grow>
+                        <NumberInput
+                            label="출생 체중 (g)"
+                            placeholder="예: 2500"
+                            required
+                            value={birthWeight}
+                            onChange={setBirthWeight}
+                            min={0}
+                            radius="md"
+                            size="md"
+                            hideControls
+                            suffix=" g"
+                            leftSection={<IconScale size={16} />}
+                            variant="filled"
+                        />
+                        <NumberInput
+                            label="출생 키 (cm)"
+                            placeholder="예: 45"
+                            value={birthHeight}
+                            onChange={setBirthHeight}
+                            min={0}
+                            radius="md"
+                            size="md"
+                            hideControls
+                            suffix=" cm"
+                            leftSection={<IconRuler size={16} />}
+                            variant="filled"
+                        />
+                    </Group>
+
+                    <Textarea
+                        label="기저질환 (선택)"
+                        placeholder="예: RDS, 황달 등 (쉼표로 구분)"
+                        value={medicalHistory}
+                        onChange={(e) => setMedicalHistory(e.target.value)}
+                        minRows={3}
+                        radius="md"
+                        size="md"
+                        variant="filled"
+                    />
+
+                    <Button 
+                        fullWidth 
+                        size="lg" 
+                        radius="xl" 
+                        color="green" 
+                        mt="md"
+                        loading={isLoading} 
+                        onClick={handleSubmit}
+                        leftSection={<IconCheck size={20} />}
+                    >
+                        {isEdit ? '수정 완료' : '등록 완료'}
+                    </Button>
+                </Stack>
+            </Paper>
+        </Center>
+      </Stack>
     </Container>
   );
 }
