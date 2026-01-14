@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBabyStore } from '../store/babyStore';
-import { useAuthStore } from '../store/authStore';
 import { chatApi } from '../api/chat';
 import type { ChatMessage, ChatSession, RAGSource } from '../types';
 import {
@@ -21,30 +20,26 @@ import {
   Box,
   Collapse,
   Center,
-  Menu,
   Image
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { 
   IconSend, 
-  IconMenu2, 
   IconPlus, 
-  IconX,
-  IconBook,
-  IconChevronDown,
-  IconChevronUp,
-  IconLogout,
-  IconUserCircle,
-  IconSettings,
-  IconArrowLeft
+  IconX, 
+  IconBook, 
+  IconChevronDown, 
+  IconChevronUp
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import ConfirmModal from '../components/ConfirmModal';
+import CommonHeader from '../components/CommonHeader';
 
 export default function Chat() {
   const navigate = useNavigate();
   const { selectedBaby } = useBabyStore();
-  const { user, clearAuth } = useAuthStore();
   
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -217,11 +212,6 @@ export default function Chat() {
     });
   };
 
-  const handleLogout = () => {
-    clearAuth();
-    navigate('/login');
-  };
-
   if (!selectedBaby) return null;
 
   return (
@@ -243,56 +233,12 @@ export default function Chat() {
         />
 
         {/* Header */}
-        <Group p="sm" justify="space-between" bg="white" style={{ zIndex: 10, borderBottom: '1px solid #eee' }}>
-          <Group gap="xs">
-            <ActionIcon variant="subtle" color="gray" onClick={openDrawer} size="lg">
-              <IconMenu2 size={24} />
-            </ActionIcon>
-            <ActionIcon variant="subtle" color="gray" onClick={() => navigate('/')} size="lg">
-              <IconArrowLeft size={24} />
-            </ActionIcon>
-            <Box>
-              <Text fw={600} size="md" lh={1.2} c="green.8">Todac</Text>
-              <Text size="xs" c="dimmed">{selectedBaby.name}</Text>
-            </Box>
-          </Group>
-          <Group gap="xs">
-            <Menu shadow="md" width={200} position="bottom-end">
-              <Menu.Target>
-                <ActionIcon variant="subtle" color="gray" size="lg" radius="xl">
-                   <Avatar src={null} alt={user?.nickname} radius="xl" size="sm" color="green">
-                     {user?.nickname?.charAt(0)}
-                   </Avatar>
-                </ActionIcon>
-              </Menu.Target>
-
-              <Menu.Dropdown>
-                <Menu.Label>사용자</Menu.Label>
-                <Menu.Item leftSection={<IconUserCircle size={14} />}>
-                  마이페이지
-                </Menu.Item>
-                {user?.role === 'ADMIN' && (
-                  <Menu.Item 
-                    leftSection={<IconSettings size={14} />}
-                    onClick={() => navigate('/admin')}
-                  >
-                    관리자 설정
-                  </Menu.Item>
-                )}
-                
-                <Menu.Divider />
-                
-                <Menu.Item 
-                  color="red" 
-                  leftSection={<IconLogout size={14} />}
-                  onClick={handleLogout}
-                >
-                  로그아웃
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </Group>
-        </Group>
+        <CommonHeader 
+          title={selectedBaby.name} 
+          onMenuClick={openDrawer} 
+          showMenu={true} 
+          showBack={true} 
+        />
 
         {/* Chat Area */}
         <ScrollArea viewportRef={viewport} flex={1} px="md" pb="md" bg="white">
@@ -300,8 +246,8 @@ export default function Chat() {
             {messages.length === 0 && (
               <Center h={400}>
                 <Stack align="center" gap="md">
-                  <Image src="/mascot.png" w={120} h={120} fit="contain" alt="Todac Mascot" />
-                  <Text size="md" c="dimmed">미숙아를 돌보며 걱정되는 점을 편하게 물어보세요😀</Text>
+                  <Image src="/mascot.png" w={180} h={180} fit="contain" alt="Todac Mascot" />
+                  <Text size="md" c="dimmed">미숙아를 돌보며 걱정되는 점을 편하게 물어보세요</Text>
                 </Stack>
               </Center>
             )}
@@ -334,11 +280,30 @@ export default function Chat() {
                         py="sm"
                         radius="xl"
                         bg="gray.1"
+                        style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}
                      >
                         {msg.is_emergency && (
                           <Badge color="red" variant="filled" mb="xs">⚠️ 응급 상황 감지</Badge>
                         )}
-                        <Text size="md" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{msg.content}</Text>
+                        <Box>
+                          <ReactMarkdown 
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              p: ({ node, ref, ...props }: any) => <Text size="md" style={{ lineHeight: 1.6 }} mb="xs" {...props} />,
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              a: ({ node, ref, ...props }: any) => <Text component="a" c="blue.6" style={{ textDecoration: 'underline' }} target="_blank" rel="noopener noreferrer" {...props} />,
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              ul: ({ node, ref, ...props }: any) => <Box component="ul" pl="md" my="xs" {...props} />,
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              ol: ({ node, ref, ...props }: any) => <Box component="ol" pl="md" my="xs" {...props} />,
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              li: ({ node, ref, ...props }: any) => <li style={{ marginBottom: 4 }} {...props}><Text span size="md" style={{ lineHeight: 1.6 }}>{props.children}</Text></li>,
+                            }}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
+                        </Box>
                      </Paper>
                   )}
 

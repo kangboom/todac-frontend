@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBabyStore } from '../store/babyStore';
-import { useAuthStore } from '../store/authStore';
 import { babyApi } from '../api/baby';
 import { Baby } from '../types';
 import { 
@@ -16,7 +15,6 @@ import {
   Stack,
   Box,
   Avatar,
-  Menu,
   Image,
   Loader,
   ThemeIcon
@@ -26,19 +24,16 @@ import {
   IconTrash, 
   IconEdit, 
   IconMessageChatbot,
-  IconUserCircle,
-  IconLogout,
-  IconSettings,
   IconGenderMale,
   IconGenderFemale
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import ConfirmModal from '../components/ConfirmModal';
+import CommonHeader from '../components/CommonHeader';
 
 export default function Home() {
   const navigate = useNavigate();
   const { babies, setSelectedBaby, fetchBabies, removeBaby } = useBabyStore();
-  const { user, clearAuth } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
   
   const [deleteModalOpened, setDeleteModalOpened] = useState(false);
@@ -94,11 +89,6 @@ export default function Home() {
     }
   };
 
-  const handleLogout = () => {
-    clearAuth();
-    navigate('/login');
-  };
-
   const calculateCorrectedAge = (birthDate: string, dueDate: string) => {
     const birth = new Date(birthDate);
     const due = new Date(dueDate);
@@ -146,50 +136,8 @@ export default function Home() {
           }}
         />
 
-        {/* Header (Same style as Chat) */}
-        <Group p="sm" justify="space-between" bg="white" style={{ zIndex: 10, borderBottom: '1px solid #eee' }}>
-          <Group gap="xs">
-            {/* 좌측 여백 제거를 위해 visibility:hidden 아이콘 삭제하고, 바로 로고 배치 */}
-            <Box px="xs">
-              <Text fw={600} size="md" lh={1.2} c="green.8">Todac</Text>
-              <Text size="xs" c="dimmed">프로필 선택</Text>
-            </Box>
-          </Group>
-          <Group gap="xs">
-            <Menu shadow="md" width={200} position="bottom-end">
-              <Menu.Target>
-                <ActionIcon variant="subtle" color="gray" size="lg" radius="xl">
-                   <Avatar src={null} alt={user?.nickname} radius="xl" size="sm" color="green">
-                     {user?.nickname?.charAt(0)}
-                   </Avatar>
-                </ActionIcon>
-              </Menu.Target>
-
-              <Menu.Dropdown>
-                <Menu.Label>사용자</Menu.Label>
-                <Menu.Item leftSection={<IconUserCircle size={14} />}>
-                  마이페이지
-                </Menu.Item>
-                {user?.role === 'ADMIN' && (
-                  <Menu.Item 
-                    leftSection={<IconSettings size={14} />}
-                    onClick={() => navigate('/admin')}
-                  >
-                    관리자 설정
-                  </Menu.Item>
-                )}
-                <Menu.Divider />
-                <Menu.Item 
-                  color="red" 
-                  leftSection={<IconLogout size={14} />}
-                  onClick={handleLogout}
-                >
-                  로그아웃
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </Group>
-        </Group>
+        {/* Header */}
+        <CommonHeader title="프로필 선택" />
 
         {/* Main Content - Horizontal Scroll */}
         <Box flex={1} style={{ overflowX: 'hidden', position: 'relative' }}>

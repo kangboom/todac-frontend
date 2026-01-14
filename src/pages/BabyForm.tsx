@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBabyStore } from '../store/babyStore';
-import { useAuthStore } from '../store/authStore';
 import { babyApi } from '../api/baby';
 import type { BabyCreateRequest, BabyUpdateRequest } from '../types';
 import {
@@ -15,36 +14,28 @@ import {
   Group,
   Stack,
   Textarea,
-  ActionIcon,
   Box,
   Text,
   Center,
-  Divider,
-  Menu,
-  Avatar
+  Divider
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { 
-  IconArrowLeft, 
   IconCheck, 
   IconGenderFemale, 
   IconGenderMale,
   IconUser,
   IconCalendar,
   IconScale,
-  IconRuler,
-  IconUserCircle,
-  IconLogout,
-  IconSettings
+  IconRuler
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
-import '@mantine/dates/styles.css';
+import CommonHeader from '../components/CommonHeader';
 
 export default function BabyForm() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { addBaby, updateBaby, babies } = useBabyStore();
-  const { user, clearAuth } = useAuthStore();
   const isEdit = !!id;
 
   const [name, setName] = useState('');
@@ -157,62 +148,14 @@ export default function BabyForm() {
     }
   };
 
-  const handleLogout = () => {
-    clearAuth();
-    navigate('/login');
-  };
-
   return (
     <Container fluid h="100dvh" p={0} m={0} bg="gray.0">
       <Stack h="100%" gap={0}>
         {/* Header */}
-        <Group p="sm" justify="space-between" bg="white" style={{ zIndex: 10, borderBottom: '1px solid #eee' }}>
-          <Group gap="xs">
-            <ActionIcon variant="subtle" color="gray" onClick={() => navigate('/')} size="lg">
-              <IconArrowLeft size={24} />
-            </ActionIcon>
-            <Box>
-                <Text fw={600} size="md" lh={1.2} c="green.8">Todac</Text>
-                <Text size="xs" c="dimmed">
-                    {isEdit ? '프로필 수정' : '아기 등록'}
-                </Text>
-            </Box>
-          </Group>
-          <Group gap="xs">
-            <Menu shadow="md" width={200} position="bottom-end">
-              <Menu.Target>
-                <ActionIcon variant="subtle" color="gray" size="lg" radius="xl">
-                   <Avatar src={null} alt={user?.nickname} radius="xl" size="sm" color="green">
-                     {user?.nickname?.charAt(0)}
-                   </Avatar>
-                </ActionIcon>
-              </Menu.Target>
-
-              <Menu.Dropdown>
-                <Menu.Label>사용자</Menu.Label>
-                <Menu.Item leftSection={<IconUserCircle size={14} />}>
-                  마이페이지
-                </Menu.Item>
-                {user?.role === 'ADMIN' && (
-                  <Menu.Item 
-                    leftSection={<IconSettings size={14} />}
-                    onClick={() => navigate('/admin')}
-                  >
-                    관리자 설정
-                  </Menu.Item>
-                )}
-                <Menu.Divider />
-                <Menu.Item 
-                  color="red" 
-                  leftSection={<IconLogout size={14} />}
-                  onClick={handleLogout}
-                >
-                  로그아웃
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </Group>
-        </Group>
+        <CommonHeader 
+          title={isEdit ? '프로필 수정' : '아기 등록'} 
+          showBack={true} 
+        />
 
         {/* Content */}
         <Box flex={1} style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column' }} p="md">
