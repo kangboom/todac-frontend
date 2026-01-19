@@ -13,6 +13,7 @@ import BabyForm from './pages/BabyForm';
 import Chat from './pages/Chat';
 import AdminDashboard from './pages/admin/Dashboard';
 import KnowledgePage from './pages/admin/Knowledge';
+import AdminQnA from './pages/admin/QnA';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import './styles/global.css';
@@ -80,6 +81,7 @@ function App() {
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
               <Route path="knowledge" element={<KnowledgePage />} />
+              <Route path="qna" element={<AdminQnA />} />
               <Route path="settings" element={<div>설정 페이지 (준비중)</div>} />
             </Route>
           </Route>
@@ -92,4 +94,3 @@ function App() {
 }
 
 export default App;
-
