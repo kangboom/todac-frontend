@@ -325,11 +325,7 @@ export default function Chat() {
                         <Stack gap="xs" mt="xs">
                           {msg.rag_sources.map((source, idx) => (
                             <Paper key={idx} p="xs" withBorder radius="md" bg="gray.0">
-                              <Group justify="space-between" mb={4}>
-                                <Text size="xs" fw={700} lineClamp={1}>{source.filename}</Text>
-                                <Badge size="xs" variant="outline">{(source.score * 100).toFixed(0)}%</Badge>
-                              </Group>
-                              <Text size="xs" c="dimmed">카테고리: {source.category}</Text>
+                              <Text size="xs" fw={700} lineClamp={1}>{source.filename}</Text>
                             </Paper>
                           ))}
                         </Stack>
