@@ -93,6 +93,7 @@ export default function Chat() {
         content: msg.content,
         is_emergency: msg.is_emergency,
         rag_sources: msg.rag_sources as RAGSource[] | undefined,
+        qna_sources: msg.qna_sources as RAGSource[] | undefined,
         created_at: msg.created_at,
       }));
       setMessages(loadedMessages);
@@ -183,6 +184,7 @@ export default function Chat() {
         content: response.response,
         is_emergency: response.is_emergency,
         rag_sources: response.rag_sources as RAGSource[] | undefined,
+        qna_sources: response.qna_sources as RAGSource[] | undefined,
         created_at: new Date().toISOString(),
       };
 
@@ -308,30 +310,42 @@ export default function Chat() {
                   )}
 
                   {/* Reference Docs */}
-                  {msg.role === 'ASSISTANT' && msg.rag_sources && msg.rag_sources.length > 0 && (
-                    <Box pl="xs">
-                      <Button 
-                        variant="subtle" 
-                        size="xs" 
-                        leftSection={<IconBook size={12} />}
-                        rightSection={expandedSources.has(msg.message_id) ? <IconChevronUp size={12} /> : <IconChevronDown size={12} />}
-                        onClick={() => toggleSource(msg.message_id)}
-                        styles={{ root: { color: 'var(--mantine-color-dimmed)' } }}
-                      >
-                        참고 문서 {msg.rag_sources.length}개
-                      </Button>
-                      
-                      <Collapse in={expandedSources.has(msg.message_id)}>
-                        <Stack gap="xs" mt="xs">
-                          {msg.rag_sources.map((source, idx) => (
-                            <Paper key={idx} p="xs" withBorder radius="md" bg="gray.0">
-                              <Text size="xs" fw={700} lineClamp={1}>{source.filename}</Text>
-                            </Paper>
-                          ))}
-                        </Stack>
-                      </Collapse>
-                    </Box>
-                  )}
+                  {msg.role === 'ASSISTANT' && (() => {
+                    // RAG와 QnA 소스 병합 및 중복 제거 (파일명 기준)
+                    const combinedSources = [
+                      ...(msg.rag_sources || []),
+                      ...(msg.qna_sources || [])
+                    ].filter((item, index, self) =>
+                      index === self.findIndex((t) => t.filename === item.filename)
+                    );
+
+                    if (combinedSources.length === 0) return null;
+
+                    return (
+                      <Box pl="xs">
+                        <Button 
+                          variant="subtle" 
+                          size="xs" 
+                          leftSection={<IconBook size={12} />}
+                          rightSection={expandedSources.has(msg.message_id) ? <IconChevronUp size={12} /> : <IconChevronDown size={12} />}
+                          onClick={() => toggleSource(msg.message_id)}
+                          styles={{ root: { color: 'var(--mantine-color-dimmed)' } }}
+                        >
+                          참고 문서 {combinedSources.length}개
+                        </Button>
+                        
+                        <Collapse in={expandedSources.has(msg.message_id)}>
+                          <Stack gap="xs" mt="xs">
+                            {combinedSources.map((source, idx) => (
+                              <Paper key={idx} p="xs" withBorder radius="md" bg="gray.0">
+                                <Text size="xs" fw={700} lineClamp={1}>{source.filename}</Text>
+                              </Paper>
+                            ))}
+                          </Stack>
+                        </Collapse>
+                      </Box>
+                    );
+                  })()}
                 </Stack>
               </Group>
             ))}

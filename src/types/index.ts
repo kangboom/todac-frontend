@@ -43,9 +43,10 @@ export interface ChatMessage {
   message_id: string;
   session_id: string;
   role: 'USER' | 'ASSISTANT';
-  content: string;
+  content: str;
   is_emergency: boolean;
   rag_sources?: RAGSource[];
+  qna_sources?: RAGSource[];
   created_at: string;
 }
 
@@ -101,5 +102,6 @@ export interface ChatMessageSendResponse {
   session_id: string;
   is_emergency: boolean;
   rag_sources?: Array<Record<string, unknown>>;
+  qna_sources?: Array<Record<string, unknown>>;
   response_time: number;
 }

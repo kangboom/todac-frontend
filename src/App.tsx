@@ -15,6 +15,7 @@ import AdminDashboard from './pages/admin/Dashboard';
 import KnowledgePage from './pages/admin/Knowledge';
 import AdminQnA from './pages/admin/QnA';
 import '@mantine/core/styles.css';
+import '@mantine/dates/styles.css';
 import '@mantine/notifications/styles.css';
 import './styles/global.css';
 import './styles/components.css';
