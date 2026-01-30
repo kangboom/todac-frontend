@@ -43,7 +43,7 @@ export interface ChatMessage {
   message_id: string;
   session_id: string;
   role: 'USER' | 'ASSISTANT';
-  content: str;
+  content: string;
   is_emergency: boolean;
   rag_sources?: RAGSource[];
   qna_sources?: RAGSource[];
