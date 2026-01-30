@@ -5,13 +5,10 @@ import {
   Button, 
   Textarea, 
   Stack, 
-  ActionIcon,
-  Collapse,
   Rating,
   Box,
   Paper
 } from '@mantine/core';
-import { IconThumbUp, IconThumbDown, IconMessage } from '@tabler/icons-react';
 import { chatApi } from '../../api/chat';
 import { notifications } from '@mantine/notifications';
 

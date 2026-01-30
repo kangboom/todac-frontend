@@ -30,8 +30,6 @@ import {
   IconPlus, 
   IconX, 
   IconBook, 
-  IconChevronDown, 
-  IconChevronUp,
   IconThumbUp,
   IconThumbDown
 } from '@tabler/icons-react';
