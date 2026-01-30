@@ -31,11 +31,14 @@ import {
   IconX, 
   IconBook, 
   IconChevronDown, 
-  IconChevronUp
+  IconChevronUp,
+  IconThumbUp,
+  IconThumbDown
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import ConfirmModal from '../components/ConfirmModal';
 import CommonHeader from '../components/CommonHeader';
+import Feedback from '../components/chat/Feedback';
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -49,6 +52,8 @@ export default function Chat() {
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const [drawerOpened, { open: openDrawer, close: closeDrawer }] = useDisclosure(false);
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
+  const [expandedFeedbacks, setExpandedFeedbacks] = useState<Set<string>>(new Set());
+  const [feedbackInitScores, setFeedbackInitScores] = useState<Record<string, number>>({});
   const [deleteModalOpened, setDeleteModalOpened] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<ChatSession | null>(null);
   const [isDeletingSession, setIsDeletingSession] = useState(false);
@@ -151,27 +156,25 @@ export default function Chat() {
     }
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputMessage.trim() || !selectedBaby || isLoading) return;
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || !selectedBaby || isLoading) return;
 
     const userMessage: ChatMessage = {
       message_id: crypto.randomUUID(),
       session_id: sessionId || '',
       role: 'USER',
-      content: inputMessage,
+      content: text,
       is_emergency: false,
       created_at: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInputMessage('');
     setIsLoading(true);
 
     try {
       const response = await chatApi.sendMessage({
         baby_id: selectedBaby.id,
-        message: inputMessage,
+        message: text,
         session_id: sessionId || undefined,
       });
 
@@ -202,6 +205,12 @@ export default function Chat() {
     }
   };
 
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await sendMessage(inputMessage);
+    setInputMessage('');
+  };
+
   const toggleSource = (messageId: string) => {
     setExpandedSources((prev) => {
       const newSet = new Set(prev);
@@ -212,6 +221,27 @@ export default function Chat() {
       }
       return newSet;
     });
+  };
+
+  const toggleFeedback = (messageId: string, initialScore: number = 0) => {
+    setExpandedFeedbacks((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(messageId)) {
+        // Only close if we are not switching intent (e.g. from Up to Down)
+        // Actually, let's keep it simple: click = toggle.
+        // But if I click Up (opens), then Down (should change score?), current implementation just toggles.
+        // Let's allow updating score if already open.
+        // For now, standard toggle.
+        newSet.delete(messageId);
+      } else {
+        newSet.add(messageId);
+      }
+      return newSet;
+    });
+    
+    if (initialScore > 0) {
+      setFeedbackInitScores(prev => ({ ...prev, [messageId]: initialScore }));
+    }
   };
 
   if (!selectedBaby) return null;
@@ -250,6 +280,26 @@ export default function Chat() {
                 <Stack align="center" gap="md">
                   <Image src="/mascot.png" w={180} h={180} fit="contain" alt="Todac Mascot" />
                   <Text size="md" c="dimmed">미숙아를 돌보며 걱정되는 점을 편하게 물어보세요</Text>
+                  
+                  <Group mt="lg" justify="center">
+                    {[
+                      "아기가 잠을 잘 못자요",
+                      "아기가 열이 나요",
+                      "아기가 토를 해요"
+                    ].map((question) => (
+                      <Button
+                        key={question}
+                        variant="light"
+                        color="gray"
+                        radius="xl"
+                        size="sm"
+                        onClick={() => sendMessage(question)}
+                        disabled={isLoading}
+                      >
+                        {question}
+                      </Button>
+                    ))}
+                  </Group>
                 </Stack>
               </Center>
             )}
@@ -309,43 +359,97 @@ export default function Chat() {
                      </Paper>
                   )}
 
-                  {/* Reference Docs */}
-                  {msg.role === 'ASSISTANT' && (() => {
-                    // RAG와 QnA 소스 병합 및 중복 제거 (파일명 기준)
-                    const combinedSources = [
-                      ...(msg.rag_sources || []),
-                      ...(msg.qna_sources || [])
-                    ].filter((item, index, self) =>
-                      index === self.findIndex((t) => t.filename === item.filename)
-                    );
+                  {/* Reference Docs & Feedback */}
+                  {msg.role === 'ASSISTANT' && (
+                    <Box pl="xs">
+                      <Group gap="xs">
+                        <Paper radius="md" shadow="none" p={4} bg="transparent">
+                          <Group gap={8}>
+                            {/* Reference Docs Icon */}
+                            {(() => {
+                              const combinedSources = [
+                                ...(msg.rag_sources || []),
+                                ...(msg.qna_sources || [])
+                              ].filter((item, index, self) =>
+                                index === self.findIndex((t) => t.filename === item.filename)
+                              );
 
-                    if (combinedSources.length === 0) return null;
+                              if (combinedSources.length === 0) return null;
 
-                    return (
-                      <Box pl="xs">
-                        <Button 
-                          variant="subtle" 
-                          size="xs" 
-                          leftSection={<IconBook size={12} />}
-                          rightSection={expandedSources.has(msg.message_id) ? <IconChevronUp size={12} /> : <IconChevronDown size={12} />}
-                          onClick={() => toggleSource(msg.message_id)}
-                          styles={{ root: { color: 'var(--mantine-color-dimmed)' } }}
-                        >
-                          참고 문서 {combinedSources.length}개
-                        </Button>
+                              return (
+                                <ActionIcon 
+                                  variant="transparent" 
+                                  color="gray" 
+                                  size="sm" 
+                                  onClick={() => toggleSource(msg.message_id)}
+                                  styles={{ root: { color: expandedSources.has(msg.message_id) ? 'var(--mantine-color-blue-6)' : 'var(--mantine-color-dimmed)' } }}
+                                >
+                                  <IconBook size={18} />
+                                </ActionIcon>
+                              );
+                            })()}
+                            
+                            {/* Feedback Icons */}
+                            <ActionIcon
+                              variant="transparent"
+                              color="gray"
+                              size="sm"
+                              onClick={() => toggleFeedback(msg.message_id, 5)}
+                              styles={{ root: { color: 'var(--mantine-color-dimmed)' } }}
+                            >
+                              <IconThumbUp size={18} />
+                            </ActionIcon>
+                            
+                            <ActionIcon
+                              variant="transparent"
+                              color="gray"
+                              size="sm"
+                              onClick={() => toggleFeedback(msg.message_id, 1)}
+                              styles={{ root: { color: 'var(--mantine-color-dimmed)' } }}
+                            >
+                              <IconThumbDown size={18} />
+                            </ActionIcon>
+                          </Group>
+                        </Paper>
+                      </Group>
+
+                      {/* Expanded Sources List */}
+                      {(() => {
+                        const combinedSources = [
+                          ...(msg.rag_sources || []),
+                          ...(msg.qna_sources || [])
+                        ].filter((item, index, self) =>
+                          index === self.findIndex((t) => t.filename === item.filename)
+                        );
                         
-                        <Collapse in={expandedSources.has(msg.message_id)}>
-                          <Stack gap="xs" mt="xs">
-                            {combinedSources.map((source, idx) => (
-                              <Paper key={idx} p="xs" withBorder radius="md" bg="gray.0">
-                                <Text size="xs" fw={700} lineClamp={1}>{source.filename}</Text>
-                              </Paper>
-                            ))}
-                          </Stack>
-                        </Collapse>
-                      </Box>
-                    );
-                  })()}
+                        if (combinedSources.length > 0) {
+                          return (
+                            <Collapse in={expandedSources.has(msg.message_id)}>
+                              <Stack gap="xs" mt="xs">
+                                {combinedSources.map((source, idx) => (
+                                  <Paper key={idx} p="xs" withBorder radius="md" bg="gray.0">
+                                    <Text size="xs" fw={700} lineClamp={1}>{source.filename}</Text>
+                                  </Paper>
+                                ))}
+                              </Stack>
+                            </Collapse>
+                          );
+                        }
+                        return null;
+                      })()}
+
+                      {/* Expanded Feedback Form */}
+                      <Collapse in={expandedFeedbacks.has(msg.message_id)}>
+                        <Box mt="xs">
+                          <Feedback 
+                            messageId={msg.message_id} 
+                            initialScore={feedbackInitScores[msg.message_id] || 0}
+                            onClose={() => toggleFeedback(msg.message_id)} 
+                          />
+                        </Box>
+                      </Collapse>
+                    </Box>
+                  )}
                 </Stack>
               </Group>
             ))}

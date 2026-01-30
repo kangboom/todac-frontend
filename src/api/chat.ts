@@ -33,6 +33,14 @@ export const chatApi = {
   deleteSession: async (sessionId: string): Promise<void> => {
     await apiClient.delete(`/api/v1/chat/sessions/${sessionId}`);
   },
+
+  sendFeedback: async (messageId: string, score: number, comment?: string): Promise<void> => {
+    await apiClient.post('/api/v1/feedback', {
+      message_id: messageId,
+      score,
+      comment,
+    });
+  },
 };
 
 
