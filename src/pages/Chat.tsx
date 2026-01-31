@@ -45,6 +45,7 @@ export default function Chat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
@@ -155,7 +156,7 @@ export default function Chat() {
   };
 
   const sendMessage = async (text: string) => {
-    if (!text.trim() || !selectedBaby || isLoading) return;
+    if (!text.trim() || !selectedBaby || isLoading || isStreaming) return;
 
     const userMessage: ChatMessage = {
       message_id: crypto.randomUUID(),
@@ -169,37 +170,86 @@ export default function Chat() {
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
+    const tempAssistantId = crypto.randomUUID();
+    const assistantMessageTemplate: ChatMessage = {
+      message_id: tempAssistantId,
+      session_id: sessionId || '',
+      role: 'ASSISTANT',
+      content: '',
+      is_emergency: false,
+      created_at: new Date().toISOString(),
+    };
+
+    let isFirstChunk = true;
+
     try {
-      const response = await chatApi.sendMessage({
+      await chatApi.sendMessage({
         baby_id: selectedBaby.id,
         message: text,
         session_id: sessionId || undefined,
+      }, {
+        onChunk: (content) => {
+          if (isFirstChunk) {
+            isFirstChunk = false;
+            setIsLoading(false);
+            setIsStreaming(true);
+            setMessages((prev) => [...prev, { ...assistantMessageTemplate, content }]);
+          } else {
+            setMessages((prev) => prev.map((msg) => 
+              msg.message_id === tempAssistantId 
+                ? { ...msg, content: msg.content + content }
+                : msg
+            ));
+          }
+        },
+        onComplete: (response) => {
+          if (isFirstChunk) {
+            // 청크 없이 완료된 경우 (바로 결과가 온 경우)
+            setIsLoading(false);
+            setMessages((prev) => [...prev, {
+              ...assistantMessageTemplate,
+              content: response.response,
+              session_id: response.session_id,
+              is_emergency: response.is_emergency,
+              rag_sources: response.rag_sources as RAGSource[],
+              qna_sources: response.qna_sources as RAGSource[],
+            }]);
+          } else {
+            // 최종 메타데이터 업데이트
+            setMessages((prev) => prev.map((msg) => 
+              msg.message_id === tempAssistantId 
+                ? { 
+                    ...msg, 
+                    content: response.response, // 확실하게 최종 텍스트로
+                    session_id: response.session_id,
+                    is_emergency: response.is_emergency,
+                    rag_sources: response.rag_sources as RAGSource[],
+                    qna_sources: response.qna_sources as RAGSource[],
+                  }
+                : msg
+            ));
+          }
+          setSessionId(response.session_id);
+          setIsStreaming(false);
+          loadSessions();
+        },
+        onError: (error) => {
+          console.error('Failed to send message:', error);
+          notifications.show({
+            title: '전송 실패',
+            message: error,
+            color: 'red',
+          });
+          setIsLoading(false);
+          setIsStreaming(false);
+        }
       });
-
-      setSessionId(response.session_id);
-
-      const assistantMessage: ChatMessage = {
-        message_id: crypto.randomUUID(),
-        session_id: response.session_id,
-        role: 'ASSISTANT',
-        content: response.response,
-        is_emergency: response.is_emergency,
-        rag_sources: response.rag_sources as RAGSource[] | undefined,
-        qna_sources: response.qna_sources as RAGSource[] | undefined,
-        created_at: new Date().toISOString(),
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-      loadSessions();
     } catch (error) {
-      console.error('Failed to send message:', error);
-      notifications.show({
-        title: '전송 실패',
-        message: '메시지 전송에 실패했습니다.',
-        color: 'red',
-      });
-    } finally {
-      setIsLoading(false);
+       // chatApi.sendMessage 내부에서 catch하여 onError를 호출하므로 여기선 거의 실행 안됨
+       // 하지만 안전장치
+       console.error('Unexpected error:', error);
+       setIsLoading(false);
+       setIsStreaming(false);
     }
   };
 
@@ -225,11 +275,6 @@ export default function Chat() {
     setExpandedFeedbacks((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(messageId)) {
-        // Only close if we are not switching intent (e.g. from Up to Down)
-        // Actually, let's keep it simple: click = toggle.
-        // But if I click Up (opens), then Down (should change score?), current implementation just toggles.
-        // Let's allow updating score if already open.
-        // For now, standard toggle.
         newSet.delete(messageId);
       } else {
         newSet.add(messageId);
@@ -292,7 +337,7 @@ export default function Chat() {
                         radius="xl"
                         size="sm"
                         onClick={() => sendMessage(question)}
-                        disabled={isLoading}
+                        disabled={isLoading || isStreaming}
                       >
                         {question}
                       </Button>
@@ -380,7 +425,15 @@ export default function Chat() {
                                   color="gray" 
                                   size="sm" 
                                   onClick={() => toggleSource(msg.message_id)}
-                                  styles={{ root: { color: expandedSources.has(msg.message_id) ? 'var(--mantine-color-blue-6)' : 'var(--mantine-color-dimmed)' } }}
+                                  styles={{ 
+                                    root: { 
+                                      color: expandedSources.has(msg.message_id) 
+                                        ? 'var(--mantine-color-blue-6)' 
+                                        : 'var(--mantine-color-gray-6)',
+                                      cursor: 'pointer'
+                                    } 
+                                  }}
+                                  title="출처 보기"
                                 >
                                   <IconBook size={18} />
                                 </ActionIcon>
@@ -470,7 +523,7 @@ export default function Chat() {
                   placeholder="Todac에게 물어보기"
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isLoading || isStreaming}
                   styles={{ 
                     input: { 
                       backgroundColor: 'var(--mantine-color-gray-1)', 
@@ -485,7 +538,7 @@ export default function Chat() {
                       variant="transparent" 
                       color={inputMessage.trim() ? "blue" : "gray"}
                       size="lg"
-                      disabled={!inputMessage.trim() || isLoading}
+                      disabled={!inputMessage.trim() || isLoading || isStreaming}
                     >
                       <IconSend size={24} />
                     </ActionIcon>
