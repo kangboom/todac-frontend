@@ -211,8 +211,8 @@ export default function Chat() {
               content: response.response,
               session_id: response.session_id,
               is_emergency: response.is_emergency,
-              rag_sources: response.rag_sources as RAGSource[],
-              qna_sources: response.qna_sources as RAGSource[],
+              rag_sources: response.rag_sources as unknown as RAGSource[],
+              qna_sources: response.qna_sources as unknown as RAGSource[],
             }]);
           } else {
             // 최종 메타데이터 업데이트
@@ -223,8 +223,8 @@ export default function Chat() {
                     content: response.response, // 확실하게 최종 텍스트로
                     session_id: response.session_id,
                     is_emergency: response.is_emergency,
-                    rag_sources: response.rag_sources as RAGSource[],
-                    qna_sources: response.qna_sources as RAGSource[],
+                    rag_sources: response.rag_sources as unknown as RAGSource[],
+                    qna_sources: response.qna_sources as unknown as RAGSource[],
                   }
                 : msg
             ));
