@@ -8,6 +8,48 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
+async function refreshAccessToken(): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    // refresh_token은 HttpOnly 쿠키로만 전달되므로 반드시 include
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    // 서버 detail 메시지를 최대한 노출
+    const errorData = await res.json().catch(() => ({}));
+    const detail = (errorData && (errorData.detail as string)) || '토큰 갱신에 실패했습니다.';
+    throw new Error(detail);
+  }
+
+  const data = (await res.json().catch(() => ({}))) as { access_token?: string };
+  if (!data?.access_token) {
+    throw new Error('토큰 갱신 응답에 access_token이 없습니다.');
+  }
+
+  localStorage.setItem('access_token', data.access_token);
+  return data.access_token;
+}
+
+async function openChatStream(
+  data: ChatMessageRequest,
+  accessToken: string | null
+): Promise<Response> {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
+  return await fetch(`${API_BASE_URL}/api/v1/chat/message`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  });
+}
+
 export const chatApi = {
   sendMessage: async (
     data: ChatMessageRequest,
@@ -17,20 +59,15 @@ export const chatApi = {
       onError: (error: string) => void;
     }
   ): Promise<void> => {
-    const token = localStorage.getItem('access_token');
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/chat/message`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(data),
-      });
+      let token = localStorage.getItem('access_token');
+      let response = await openChatStream(data, token);
+
+      // 401이면 refresh로 access_token 갱신 후 원요청 1회 재시도
+      if (response.status === 401) {
+        token = await refreshAccessToken();
+        response = await openChatStream(data, token);
+      }
 
       if (!response.ok) {
         if (response.status === 401) {
