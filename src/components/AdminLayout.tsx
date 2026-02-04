@@ -1,7 +1,7 @@
 import { AppShell, Burger, Group, NavLink, Text, Button } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
-import { IconDashboard, IconFiles, IconLogout, IconSettings, IconArrowLeft, IconDatabase } from '@tabler/icons-react';
+import { IconDashboard, IconFiles, IconLogout, IconSettings, IconArrowLeft, IconDatabase, IconMessageReport } from '@tabler/icons-react';
 import { useAuthStore } from '../store/authStore';
 
 export function AdminLayout() {
@@ -76,6 +76,13 @@ export function AdminLayout() {
           leftSection={<IconDatabase size={20} />}
           active={location.pathname === '/admin/qna'}
           onClick={() => navigate('/admin/qna')}
+          variant="light"
+        />
+        <NavLink
+          label="피드백 관리"
+          leftSection={<IconMessageReport size={20} />}
+          active={location.pathname === '/admin/feedback'}
+          onClick={() => navigate('/admin/feedback')}
           variant="light"
         />
         <NavLink

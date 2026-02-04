@@ -14,6 +14,7 @@ import Chat from './pages/Chat';
 import AdminDashboard from './pages/admin/Dashboard';
 import KnowledgePage from './pages/admin/Knowledge';
 import AdminQnA from './pages/admin/QnA';
+import AdminFeedbackPage from './pages/admin/Feedback';
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
 import '@mantine/notifications/styles.css';
@@ -83,6 +84,7 @@ function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="knowledge" element={<KnowledgePage />} />
               <Route path="qna" element={<AdminQnA />} />
+              <Route path="feedback" element={<AdminFeedbackPage />} />
               <Route path="settings" element={<div>설정 페이지 (준비중)</div>} />
             </Route>
           </Route>
