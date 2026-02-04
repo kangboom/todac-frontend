@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Title, Paper, Button, Group, Table, Modal, TextInput, 
-  Textarea, Stack, LoadingOverlay, Badge, Text 
+  Textarea, Stack, LoadingOverlay, Badge, Text, Pagination 
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconPlus, IconRefresh, IconDatabase } from '@tabler/icons-react';
@@ -16,6 +16,11 @@ export default function AdminQnA() {
   const [opened, { open, close }] = useDisclosure(false);
   const [confirmOpened, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
 
+  // Pagination State
+  const [activePage, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const ITEMS_PER_PAGE = 10;
+
   // Form State
   const [formData, setFormData] = useState({
     question: '',
@@ -27,8 +32,10 @@ export default function AdminQnA() {
   const fetchQnAs = async () => {
     setLoading(true);
     try {
-      const data = await qnaApi.getQnAList();
-      setQnas(data);
+      const skip = (activePage - 1) * ITEMS_PER_PAGE;
+      const data = await qnaApi.getQnAList(skip, ITEMS_PER_PAGE);
+      setQnas(data.items);
+      setTotal(data.total);
     } catch (error) {
       console.error(error);
       notifications.show({ title: '오류', message: '목록을 불러오지 못했습니다.', color: 'red' });
@@ -39,7 +46,7 @@ export default function AdminQnA() {
 
   useEffect(() => {
     fetchQnAs();
-  }, []);
+  }, [activePage]);
 
   const handleSubmit = async () => {
     if (!formData.question || !formData.answer) return;
@@ -50,7 +57,11 @@ export default function AdminQnA() {
       notifications.show({ title: '성공', message: 'QnA가 등록되었습니다.', color: 'green' });
       close();
       setFormData({ question: '', answer: '', source: '', category: '' });
-      fetchQnAs();
+      // 등록 후 첫 페이지로 이동하여 최신 데이터 확인
+      setPage(1);
+      if (activePage === 1) {
+        fetchQnAs();
+      }
     } catch (error) {
       console.error(error);
       notifications.show({ title: '실패', message: '등록 중 오류가 발생했습니다.', color: 'red' });
@@ -82,6 +93,8 @@ export default function AdminQnA() {
     }
   };
 
+  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+
   return (
     <Stack gap="md">
       <Group justify="space-between">
@@ -104,35 +117,43 @@ export default function AdminQnA() {
 
       <Paper shadow="sm" radius="md" p="md" withBorder style={{ position: 'relative', minHeight: '200px' }}>
         <LoadingOverlay visible={loading} />
-        <Table>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th style={{ width: '60px' }}>ID</Table.Th>
-              <Table.Th style={{ width: '100px' }}>카테고리</Table.Th>
-              <Table.Th>질문</Table.Th>
-              <Table.Th>답변</Table.Th>
-              <Table.Th style={{ width: '150px' }}>출처</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {qnas.map((qna) => (
-              <Table.Tr key={qna.id}>
-                <Table.Td>{qna.id}</Table.Td>
-                <Table.Td><Badge color="gray" variant="light">{qna.category}</Badge></Table.Td>
-                <Table.Td><Text fw={500} lineClamp={1}>{qna.question}</Text></Table.Td>
-                <Table.Td><Text size="sm" lineClamp={2} c="dimmed">{qna.answer}</Text></Table.Td>
-                <Table.Td><Text size="xs" c="dimmed">{qna.source}</Text></Table.Td>
+        <Stack justify="space-between" style={{ minHeight: '500px' }}>
+          <Table>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th style={{ width: '60px' }}>ID</Table.Th>
+                <Table.Th style={{ width: '100px' }}>카테고리</Table.Th>
+                <Table.Th>질문</Table.Th>
+                <Table.Th>답변</Table.Th>
+                <Table.Th style={{ width: '150px' }}>출처</Table.Th>
               </Table.Tr>
-            ))}
-            {!loading && qnas.length === 0 && (
-                <Table.Tr>
-                    <Table.Td colSpan={5} align="center" py="xl">
-                        <Text c="dimmed">등록된 데이터가 없습니다.</Text>
-                    </Table.Td>
+            </Table.Thead>
+            <Table.Tbody>
+              {qnas.map((qna) => (
+                <Table.Tr key={qna.id}>
+                  <Table.Td>{qna.id}</Table.Td>
+                  <Table.Td><Badge color="gray" variant="light">{qna.category}</Badge></Table.Td>
+                  <Table.Td><Text fw={500} lineClamp={1}>{qna.question}</Text></Table.Td>
+                  <Table.Td><Text size="sm" lineClamp={2} c="dimmed">{qna.answer}</Text></Table.Td>
+                  <Table.Td><Text size="xs" c="dimmed">{qna.source}</Text></Table.Td>
                 </Table.Tr>
-            )}
-          </Table.Tbody>
-        </Table>
+              ))}
+              {!loading && qnas.length === 0 && (
+                  <Table.Tr>
+                      <Table.Td colSpan={5} align="center" py="xl">
+                          <Text c="dimmed">등록된 데이터가 없습니다.</Text>
+                      </Table.Td>
+                  </Table.Tr>
+              )}
+            </Table.Tbody>
+          </Table>
+
+          {total > 0 && (
+            <Group justify="center" mt="md">
+              <Pagination total={totalPages} value={activePage} onChange={setPage} />
+            </Group>
+          )}
+        </Stack>
       </Paper>
 
       <Modal opened={opened} onClose={close} title="QnA 등록">

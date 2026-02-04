@@ -9,6 +9,13 @@ export interface QnA {
   created_at?: string;
 }
 
+export interface QnAListResponse {
+  items: QnA[];
+  total: number;
+  page: number;
+  size: number;
+}
+
 export interface QnACreateRequest {
   question: string;
   answer: string;
@@ -24,8 +31,8 @@ export const qnaApi = {
   },
 
   // QnA 목록 조회
-  getQnAList: async (skip = 0, limit = 100) => {
-    const response = await client.get<QnA[]>(`/api/v1/admin/qna/?skip=${skip}&limit=${limit}`);
+  getQnAList: async (skip = 0, limit = 10) => {
+    const response = await client.get<QnAListResponse>(`/api/v1/admin/qna/?skip=${skip}&limit=${limit}`);
     return response.data;
   },
   
