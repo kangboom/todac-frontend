@@ -1,7 +1,7 @@
 import { AppShell, Burger, Group, NavLink, Text, Button } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
-import { IconDashboard, IconFiles, IconLogout, IconSettings, IconArrowLeft, IconDatabase, IconMessageReport } from '@tabler/icons-react';
+import { IconDashboard, IconFiles, IconLogout, IconSettings, IconArrowLeft, IconDatabase, IconMessageReport, IconMessage } from '@tabler/icons-react';
 import { useAuthStore } from '../store/authStore';
 
 export function AdminLayout() {
@@ -32,22 +32,22 @@ export function AdminLayout() {
             <Text fw={700} size="lg">TODAC Admin</Text>
           </Group>
           <Group gap="xs">
-            <Button 
-              variant="light" 
-              color="blue" 
+            <Button
+              variant="light"
+              color="blue"
               size="xs"
-              onClick={() => navigate('/')} 
+              onClick={() => navigate('/')}
               leftSection={<IconArrowLeft size={16} />}
               px="xs"
             >
               <Text visibleFrom="xs">서비스로 돌아가기</Text>
               <Text hiddenFrom="xs">홈</Text>
             </Button>
-            <Button 
-              variant="subtle" 
-              color="red" 
+            <Button
+              variant="subtle"
+              color="red"
               size="xs"
-              onClick={handleLogout} 
+              onClick={handleLogout}
               px="xs"
             >
               <IconLogout size={16} />
@@ -83,6 +83,13 @@ export function AdminLayout() {
           leftSection={<IconMessageReport size={20} />}
           active={location.pathname === '/admin/feedback'}
           onClick={() => navigate('/admin/feedback')}
+          variant="light"
+        />
+        <NavLink
+          label="대화 내역"
+          leftSection={<IconMessage size={20} />}
+          active={location.pathname === '/admin/chat-history'}
+          onClick={() => navigate('/admin/chat-history')}
           variant="light"
         />
         <NavLink
