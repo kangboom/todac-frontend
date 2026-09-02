@@ -37,7 +37,7 @@ export default function CommonHeader({
       {/* Left Section */}
       <Group gap="xs">
         {showMenu && (
-          <ActionIcon variant="subtle" color="gray" onClick={onMenuClick} size="lg">
+          <ActionIcon aria-label="채팅 목록 열기" variant="subtle" color="gray" onClick={onMenuClick} size="lg">
             <IconMenu2 size={24} />
           </ActionIcon>
         )}

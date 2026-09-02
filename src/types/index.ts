@@ -52,6 +52,37 @@ export interface ChatMessage {
 
 export interface ChatSessionDetail extends ChatSession {
   messages: ChatMessage[];
+  coaching?: CoachingMetadata | null;
+}
+
+export interface CoachingOption {
+  id: string;
+  label: string;
+}
+
+export interface CoachingInteraction {
+  id: string;
+  kind: string;
+  prompt: string;
+  options: CoachingOption[];
+  allow_free_text: boolean;
+}
+
+export interface CoachingMetadata {
+  episode_id: string;
+  status: string;
+  phase: string;
+  goal?: string | null;
+  attempt_count?: number;
+  pending_interaction?: CoachingInteraction | null;
+  next_actions?: CoachingOption[];
+}
+
+export interface CoachingInteractionEvent {
+  type: 'interaction';
+  episode_id: string;
+  phase: string;
+  interaction: CoachingInteraction;
 }
 
 export interface AuthResponse {
@@ -95,6 +126,9 @@ export interface ChatMessageRequest {
   baby_id: string;
   message: string;
   session_id?: string;
+  request_id?: string;
+  interaction_id?: string;
+  selected_option_id?: string;
 }
 
 export interface ChatMessageSendResponse {
@@ -104,4 +138,5 @@ export interface ChatMessageSendResponse {
   rag_sources?: Array<Record<string, unknown>>;
   qna_sources?: Array<Record<string, unknown>>;
   response_time: number;
+  coaching?: CoachingMetadata | null;
 }

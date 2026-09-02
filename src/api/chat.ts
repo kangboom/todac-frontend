@@ -4,6 +4,7 @@ import type {
   ChatSessionDetail,
   ChatMessageRequest,
   ChatMessageSendResponse,
+  CoachingInteractionEvent,
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -56,6 +57,7 @@ export const chatApi = {
     callbacks: {
       onChunk: (content: string) => void;
       onComplete: (response: ChatMessageSendResponse) => void;
+      onInteraction: (interaction: CoachingInteractionEvent) => void;
       onError: (error: string) => void;
     }
   ): Promise<void> => {
@@ -83,7 +85,7 @@ export const chatApi = {
       const decoder = new TextDecoder();
       let buffer = '';
 
-      while (true) {
+      for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
 
@@ -101,6 +103,8 @@ export const chatApi = {
                 callbacks.onChunk(parsed.content);
               } else if (parsed.type === 'done') {
                 callbacks.onComplete(parsed);
+              } else if (parsed.type === 'interaction') {
+                callbacks.onInteraction(parsed);
               } else if (parsed.type === 'error') {
                 callbacks.onError(parsed.detail);
               }

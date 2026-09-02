@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBabyStore } from '../store/babyStore';
 import { chatApi } from '../api/chat';
-import type { ChatMessage, ChatSession, RAGSource } from '../types';
+import type { ChatMessage, ChatSession, CoachingInteraction, RAGSource } from '../types';
 import {
   Container,
   Paper,
@@ -37,6 +37,7 @@ import { notifications } from '@mantine/notifications';
 import ConfirmModal from '../components/ConfirmModal';
 import CommonHeader from '../components/CommonHeader';
 import Feedback from '../components/chat/Feedback';
+import CoachingInteractionCard from '../components/chat/CoachingInteraction';
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -56,24 +57,14 @@ export default function Chat() {
   const [deleteModalOpened, setDeleteModalOpened] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<ChatSession | null>(null);
   const [isDeletingSession, setIsDeletingSession] = useState(false);
+  const [pendingInteraction, setPendingInteraction] = useState<CoachingInteraction | null>(null);
+  const [completionActions, setCompletionActions] = useState<CoachingInteraction['options']>([]);
   
   const viewport = useRef<HTMLDivElement>(null);
+  const messageInput = useRef<HTMLInputElement>(null);
+  const freeTextDisabled = Boolean(pendingInteraction && !pendingInteraction.allow_free_text);
 
-  useEffect(() => {
-    if (!selectedBaby) {
-      navigate('/');
-      return;
-    }
-    loadSessions();
-  }, [selectedBaby, navigate]);
-
-  useEffect(() => {
-    if (viewport.current) {
-      viewport.current.scrollTo({ top: viewport.current.scrollHeight, behavior: 'smooth' });
-    }
-  }, [messages]);
-
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     if (!selectedBaby) return;
     setIsLoadingSessions(true);
     try {
@@ -84,7 +75,21 @@ export default function Chat() {
     } finally {
       setIsLoadingSessions(false);
     }
-  };
+  }, [selectedBaby]);
+
+  useEffect(() => {
+    if (!selectedBaby) {
+      navigate('/');
+      return;
+    }
+    loadSessions();
+  }, [selectedBaby, navigate, loadSessions]);
+
+  useEffect(() => {
+    if (viewport.current) {
+      viewport.current.scrollTo({ top: viewport.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages]);
 
   const loadSessionMessages = async (session: ChatSession) => {
     setIsLoading(true);
@@ -102,6 +107,8 @@ export default function Chat() {
       }));
       setMessages(loadedMessages);
       setSessionId(session.id);
+      setPendingInteraction(detail.coaching?.pending_interaction || null);
+      setCompletionActions(detail.coaching?.next_actions || []);
       closeDrawer();
     } catch (error) {
       console.error('Failed to load session messages:', error);
@@ -118,6 +125,8 @@ export default function Chat() {
   const startNewChat = () => {
     setMessages([]);
     setSessionId(null);
+    setPendingInteraction(null);
+    setCompletionActions([]);
     closeDrawer();
   };
 
@@ -155,11 +164,13 @@ export default function Chat() {
     }
   };
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (text: string, selectedOptionId?: string) => {
     if (!text.trim() || !selectedBaby || isLoading || isStreaming) return;
 
+    const requestId = crypto.randomUUID();
+    const interaction = pendingInteraction;
     const userMessage: ChatMessage = {
-      message_id: crypto.randomUUID(),
+      message_id: requestId,
       session_id: sessionId || '',
       role: 'USER',
       content: text,
@@ -169,6 +180,8 @@ export default function Chat() {
 
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
+    setPendingInteraction(null);
+    setCompletionActions([]);
 
     const tempAssistantId = crypto.randomUUID();
     const assistantMessageTemplate: ChatMessage = {
@@ -187,6 +200,9 @@ export default function Chat() {
         baby_id: selectedBaby.id,
         message: text,
         session_id: sessionId || undefined,
+        request_id: requestId,
+        interaction_id: interaction?.id,
+        selected_option_id: selectedOptionId,
       }, {
         onChunk: (content) => {
           if (isFirstChunk) {
@@ -230,8 +246,15 @@ export default function Chat() {
             ));
           }
           setSessionId(response.session_id);
+          if (response.coaching?.status !== 'WAITING_USER') {
+            setPendingInteraction(null);
+          }
+          setCompletionActions(response.coaching?.next_actions || []);
           setIsStreaming(false);
           loadSessions();
+        },
+        onInteraction: (event) => {
+          setPendingInteraction(event.interaction);
         },
         onError: (error) => {
           console.error('Failed to send message:', error);
@@ -242,6 +265,10 @@ export default function Chat() {
           });
           setIsLoading(false);
           setIsStreaming(false);
+          setPendingInteraction(interaction);
+          setMessages((prev) => prev.filter(
+            (msg) => msg.message_id !== requestId && msg.message_id !== tempAssistantId
+          ));
         }
       });
     } catch (error) {
@@ -255,8 +282,24 @@ export default function Chat() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (freeTextDisabled) return;
     await sendMessage(inputMessage);
     setInputMessage('');
+  };
+
+  const handleCoachingSelection = async (optionId: string, label: string) => {
+    await sendMessage(label, optionId);
+  };
+
+  const handleCompletionAction = async (optionId: string, label: string) => {
+    if (optionId === 'new_goal') {
+      await sendMessage(label, optionId);
+      return;
+    }
+    setCompletionActions([]);
+    if (optionId === 'other_question') {
+      messageInput.current?.focus();
+    }
   };
 
   const toggleSource = (messageId: string) => {
@@ -384,15 +427,15 @@ export default function Chat() {
                           <ReactMarkdown 
                             remarkPlugins={[remarkGfm]}
                             components={{
-                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
                               p: ({ node, ref, ...props }: any) => <Text size="md" style={{ lineHeight: 1.6 }} mb="xs" {...props} />,
-                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
                               a: ({ node, ref, ...props }: any) => <Text component="a" c="blue.6" style={{ textDecoration: 'underline' }} target="_blank" rel="noopener noreferrer" {...props} />,
-                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
                               ul: ({ node, ref, ...props }: any) => <Box component="ul" pl="md" my="xs" {...props} />,
-                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
                               ol: ({ node, ref, ...props }: any) => <Box component="ol" pl="md" my="xs" {...props} />,
-                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
                               li: ({ node, ref, ...props }: any) => <li style={{ marginBottom: 4 }} {...props}><Text span size="md" style={{ lineHeight: 1.6 }}>{props.children}</Text></li>,
                             }}
                           >
@@ -516,14 +559,39 @@ export default function Chat() {
         {/* Input Area */}
         <Box p="md" bg="white">
           <Box maw={800} mx="auto">
+            {pendingInteraction && (
+              <Box mb="sm">
+                <CoachingInteractionCard
+                  interaction={pendingInteraction}
+                  disabled={isLoading || isStreaming}
+                  onSelect={handleCoachingSelection}
+                />
+              </Box>
+            )}
+            {completionActions.length > 0 && (
+              <Box mb="sm">
+                <CoachingInteractionCard
+                  interaction={{
+                    id: 'completed-actions',
+                    kind: 'COACHING_COMPLETE_ACTIONS',
+                    prompt: '다음에는 무엇을 할까요?',
+                    options: completionActions,
+                    allow_free_text: false,
+                  }}
+                  disabled={isLoading || isStreaming}
+                  onSelect={handleCompletionAction}
+                />
+              </Box>
+            )}
             <form onSubmit={handleSendMessage}>
                 <TextInput
+                  ref={messageInput}
                   size="lg"
                   radius="xl"
-                  placeholder="Todac에게 물어보기"
+                  placeholder={pendingInteraction ? "선택하거나 직접 답변하기" : "Todac에게 물어보기"}
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  disabled={isLoading || isStreaming}
+                  disabled={isLoading || isStreaming || freeTextDisabled}
                   styles={{ 
                     input: { 
                       backgroundColor: 'var(--mantine-color-gray-1)', 
@@ -538,7 +606,7 @@ export default function Chat() {
                       variant="transparent" 
                       color={inputMessage.trim() ? "blue" : "gray"}
                       size="lg"
-                      disabled={!inputMessage.trim() || isLoading || isStreaming}
+                      disabled={!inputMessage.trim() || isLoading || isStreaming || freeTextDisabled}
                     >
                       <IconSend size={24} />
                     </ActionIcon>
